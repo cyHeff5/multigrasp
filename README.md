@@ -166,3 +166,59 @@ Die Policies werden mit der echten AR10-Hand an den realen Benchmarkteilen getes
 
 ## 8. Discussion & Limitations
 
+
+---
+
+## 9. Durchführung des realen Tests
+
+Der reale Test läuft auf zwei Laptops. Der **AR10-Laptop** (Windows) führt die Policy und die Kalibrierung aus und ist per USB mit der Hand verbunden. Der **Sawyer-Laptop** (Ubuntu/ROS) fährt den Arm in die Pregrasp-Posen. Beide werden manuell über die Eingabe-Prompts synchronisiert, ein Netzwerk zwischen ihnen ist nicht nötig.
+
+### 9.1 Vorbereitung (AR10-Laptop)
+
+```bash
+git clone https://github.com/cyHeff5/multigrasp.git
+cd multigrasp
+pip install -r requirements.txt
+```
+
+Anschließend die Hand per USB anschließen und den COM-Port notieren. Falls die im Pololu Maestro Control Center hinterlegten Kanal-Limits von den Standardwerten (4200/7700) abweichen, werden sie in `artifacts/calibration/servo_limits.yaml` eingetragen. Der Maestro clippt eingehende Zielwerte still auf seine gespeicherten Grenzen, was sonst zu falschen Kontaktsignalen führen würde.
+
+### 9.2 Kalibrierung des Kontakt-Schwellwerts
+
+Der Schwellwert wird einmalig für den Precision Grasp kalibriert; der Power Grasp übernimmt ihn und wird nur validiert.
+
+```bash
+# 1. Ohne Objekt: Rauschboden der freien Bewegung
+python -m eval.calibration --config configs/precision.yaml --port COM4 --phase free
+
+# 2. Mit Objekt (Würfel auf dem Podest, Sawyer in Precision-Pregrasp)
+python -m eval.calibration --config configs/precision.yaml --port COM4 --phase parallel
+
+# 3. Transfer auf Power validieren (Sawyer in Power-Pregrasp)
+python -m eval.calibration --config configs/power.yaml --port COM4 --phase power-check
+```
+
+In der `parallel`-Phase schließen simulierte und echte Hand synchron, bis die Simulation den Erstkontakt meldet. Danach wird die echte Hand per Tastatur (`+n` schließen, `-n` öffnen, `ok` bestätigen) so weit nachgeschlossen, bis der Kontakt sichtbar ist. Der Bediener übernimmt hier die Rolle des fehlenden Kontaktsensors. Aus dem so ausgerichteten Zustand wird der reale Schwellwert pro Finger bestimmt und in `artifacts/calibration/real_threshold.yaml` geschrieben.
+
+### 9.3 Greifversuche
+
+Für jede Policy wird der geschlossene Regelkreis gestartet:
+
+```bash
+python -m eval.policy_runner --config configs/precision.yaml \
+    --model artifacts/models/precision/seed_0_dr/best/best_model --port COM4
+python -m eval.policy_runner --config configs/power.yaml \
+    --model artifacts/models/power/seed_0_dr/best/best_model --port COM4
+```
+
+Jeder Greifpunkt wird mehrfach getestet. Pro Versuch:
+
+1. **Sawyer-Laptop:** Hand über `drive_pregrasp` an den Greifpunkt fahren.
+2. **AR10-Laptop:** Objekt-Label eingeben und mit Enter den Griff starten. Die Policy schließt die Finger im geschlossenen Regelkreis und stoppt selbstständig, sobald der Griff stabil ist.
+3. **Sawyer-Laptop:** Arm anheben (Lift-Test), danach wieder absenken.
+4. **AR10-Laptop:** Mit Enter die Hand öffnen, Objekt neu platzieren, nächster Versuch.
+
+Erfolg oder Fehlschlag wird nicht eingegeben, sondern per Video dokumentiert. Der Runner speichert zu jedem Versuch einen Zeitstempel zur Synchronisation mit der Aufnahme (`artifacts/eval_results/real_*.csv`).
+
+Zwei Punkte sind dabei wichtig. Der Arm muss vor dem Öffnen der Hand wieder abgesenkt werden, sonst fällt das Objekt. Und die Firgelli-Aktuatoren haben nur einen Duty Cycle von 20 %, weshalb nach dem Trigger-Stopp zügig gehoben werden sollte, statt die Finger lange unter Last gestallt zu halten.
+
