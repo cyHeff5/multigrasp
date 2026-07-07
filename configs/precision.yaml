@@ -1,0 +1,99 @@
+# Precision Grasp - Daumen + Finger pinchen das Objekt.
+# Feix et al. 2014: Tip Pinch (2-Punkt), Tripod (3-Punkt).
+
+grasp_type: precision
+
+# Action-Gruppen: jede Gruppe = EIN Action-Signal, das alle Joints der Gruppe
+# identisch treibt. Zeige (servo8/9) und Mittel (servo6/7) sind gekoppelt -> beide
+# Finger schliessen immer symmetrisch. Damit bleibt ihr Kontakt-Schwerpunkt auf der
+# Symmetrieebene der Hand; der Daumen (auf dieser Ebene) steht ihnen lateral per
+# Konstruktion gegenueber -> kein Kipp-Moment aus seitlich versetzter Pressung.
+# Die blinde Policy koennte die Opposition nicht selbst korrigieren (sie sieht nur
+# Kontakt-Bits), deshalb wird die Symmetrie strukturell erzwungen statt gelernt.
+# Der Daumen ist komplett fix: servo0 (Abduktion) via thumb_abduction_range,
+# servo1 (Flexion) NICHT in den Action-Gruppen -> bleibt auf Reset-Wert 0.0 (gestreckt).
+# Grund: der aktive Daumen flektierte einseitig ins Objekt und kippte es um (gemessen:
+# Erstkontakt nur Daumen -> Objekt neigt sich 0->47° -> Drop). Statisch stösst er nicht an.
+# Pinky und Ring bleiben offen.
+action_groups:
+  - [servo6, servo8]    # MCP: Mittel + Zeige gekoppelt
+  - [servo7, servo9]    # PIP: Mittel + Zeige gekoppelt
+
+# Welche Joints zu welchem Finger gehören - bestimmt die Observations-Bits (1 Bit pro Finger).
+finger_joints:
+  middle: [servo6, servo7]
+  index:  [servo8, servo9]
+
+# Lift wird ausgelöst wenn trigger_n Finger gleichzeitig Kontakt haben.
+# Westling & Johansson 1984: Preload -> Loading -> Lift.
+trigger_n: 2                       # Tripod erzwingen: BEIDE Finger (Zeige+Mittel) muessen Kontakt haben
+trigger_confirmation_steps: 3      # muss trigger_n consecutive Schritte erfüllt sein
+stabilization_steps: 30            # Schritte zwischen Trigger und Lift-Test
+n_target: 2                        # Reward zielt auf beide Finger (kein Einzelfinger-Pinch mehr)
+
+action:
+  delta_norm: 0.005                # max. Schrittgröße pro Policy-Step für Finger-Joints (normalisiert)
+  thumb_abduction_delta: 0.005     # Schrittgröße für Daumen-Abduktion (servo0, bidirektional)
+  thumb_abduction_range: [0.45, 0.55]  # erlaubter Positionsbereich für Daumen-Abduktion
+  # begrenzt Joints, verhindert Überfahren/Umwerfen des Objekts.
+  # servo7/9 (obere Zeige/Mittel-Joints) auf 0.5: voll geschlossen würden die
+  # Fingerspitzen das Objekt überfahren. (servo1 ist fix, braucht keinen Cap.)
+  pip_caps: {servo7: 0.5, servo9: 0.5}
+
+observation:
+  # q_target - q_measured > threshold -> Finger gilt als im Kontakt (binäres Signal).
+  # threshold ist der Nominalwert (Referenz fuer die Parallel-Kalibrierung);
+  # threshold_range randomisiert ihn pro Episode -> Policy haengt nicht an der
+  # exakten Bit-Latenz. Untergrenze 0.02 = 2x gemessener Sim-Freilauf-q_delta
+  # (0.0095, worst case substeps=4). Echte Schwelle: eval/calibration.py.
+  threshold: 0.05
+  threshold_range: [0.02, 0.08]
+
+reward:
+  # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,
+  # Shaping = gamma*Phi(s') - Phi(s). Policy-invariant + kein Toggle-Farming (siehe sim/reward.py).
+  w_contact:     0.1               # Hoehe des Kontakt-Potentials Phi (max. Beitrag bei n_target Kontakten)
+  w_pedestal:    0.05              # Penalty wenn Objekt das Podest berührt
+  r_step:       -0.01              # Strafe pro Schritt, zwingt zur Effizienz
+  r_lift_success: 10.0
+  r_lift_fail:   -5.0
+  gamma:         0.995             # MUSS mit ppo.yaml gamma uebereinstimmen (PBRS-Invarianz)
+
+physics:
+  motor_force:        {min: 0.4, max: 0.7}    # Motormoment in Nm (Firgelli ~40N × 12mm Hebel ≈ 0.5 Nm), pro Episode randomisiert
+  fingertip_friction: {min: 1.5, max: 2.5}    # Reibwert Silikon-Fingerkappen, pro Episode randomisiert
+  joint_damping: 0.1               # geschwindigkeitsproportionale Gelenkdämpfung
+  max_velocity:  0.5               # max. Gelenkwinkelgeschwindigkeit in rad/s (Firgelli PQ12 mit 100:1 Getriebe)
+
+sampler:
+  # Feix et al. 2014 - Objektgrößen für Precision Grasp (kleiner als Power).
+  shapes: [sphere, cube, cylinder, rect_cylinder]
+  sphere:        {size_cm:      {min: 4.0, max: 6.0}}
+  cube:          {size_cm:      {min: 4.0, max: 6.0}}
+  cylinder:      {thickness_cm: {min: 1.0, max: 3.0}, height_cm: {min: 5.0, max: 12.0}}
+  rect_cylinder: {thickness_cm: {min: 1.0, max: 3.0}, width_cm:  {min: 1.0, max: 3.0}, height_cm: {min: 5.0, max: 12.0}}
+  density_g_cm3:    {min: 0.3,  max: 1.5}    # Dichte (Schaum/Holz bis dichter Kunststoff); Masse = Dichte × Volumen
+  lateral_friction: {min: 0.3,  max: 1.2}    # pro Episode randomisiert
+
+pregrasp:
+  distance_m:  0.004                # Abstand Hand-Referenzpunkt zur Objekt-Oberfläche
+  jitter_xy_m: 0.005               # zufällige XY-Verschiebung der Pregrasp-Position
+  jitter_z_m:  0.002               # zufällige Z-Verschiebung
+
+episode:
+  max_steps:    300                # Episodenlänge falls kein Trigger ausgelöst wird
+  settle_steps: 15                 # Physik-Settle nach Spawn, bevor Episode beginnt
+  sim_hz:       240
+  # substeps ist der Nominalwert (bestimmt auch das step_dt der echten Hand:
+  # substeps/sim_hz ~ 20.8 ms); substeps_range randomisiert die Kontrollrate pro
+  # Episode auf 34-60 Hz, weil die echte Loop-Rate (step_dt + serielle I/O) nur
+  # ungenau bekannt ist.
+  substeps:       5                # Sim-Schritte pro Policy-Step -> 48 Hz Kontrollfrequenz
+  substeps_range: [4, 7]
+
+lift:
+  height_m:      0.05
+  lift_steps:    30
+  hold_steps:    30
+  success_m:     0.03              # Objekt muss >= 3 cm mitgehoben werden
+  drop_tilt_rad: 0.8               # Objekt-Neigung ab der der Griff als Drop gilt (~46°)
