@@ -1,0 +1,16 @@
+shape,yaw_rad,size_cm,n_success,n_trials,success_rate,thickness_cm,height_cm,width_cm
+sphere,0.0,4.0,1,2,0.5,,,
+sphere,0.0,5.0,2,2,1.0,,,
+sphere,0.0,6.0,2,2,1.0,,,
+cube,0.0,4.0,2,2,1.0,,,
+cube,0.0,5.0,2,2,1.0,,,
+cube,0.0,6.0,2,2,1.0,,,
+cylinder,0.0,,0,2,0.0,1.0,8.5,
+cylinder,0.0,,0,2,0.0,2.0,8.5,
+cylinder,0.0,,0,2,0.0,3.0,8.5,
+rect_cylinder,0.0,,0,2,0.0,1.0,8.5,1.0
+rect_cylinder,0.0,,0,2,0.0,1.0,8.5,2.0
+rect_cylinder,0.0,,0,2,0.0,1.0,8.5,3.0
+rect_cylinder,0.0,,0,2,0.0,2.0,8.5,2.0
+rect_cylinder,0.0,,0,2,0.0,2.0,8.5,3.0
+rect_cylinder,0.0,,0,2,0.0,3.0,8.5,3.0
