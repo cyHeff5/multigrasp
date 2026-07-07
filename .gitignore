@@ -217,7 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Trainierte Modelle und TensorBoard-Logs (zu groß für git)
+# Trainierte Modelle und TensorBoard-Logs (zu groß für git).
+# Ausnahme: die zwei best-Policies (seed_0_dr) sind bewusst per 'git add -f'
+# eingecheckt, damit die Real-Eval mit einem einmaligen clone/pull laeuft.
 artifacts/models/
 artifacts/logs/
 
