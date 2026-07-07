@@ -1,0 +1,20 @@
+# Per-Kanal Servo-Limits der echten Hand, abgelesen aus dem Pololu Maestro
+# Control Center (Channel Settings: Min/Max in Quarter-Mikrosekunden).
+#
+# WARUM: Der Maestro clippt eingehende Targets STILL auf seine gespeicherten
+# Kanal-Limits. Sind unsere Limits weiter als seine, laufen q_target und echte
+# Position auseinander -> Phantom-q_delta -> falsche Kontakt-Bits.
+#
+# AUSFUELLEN (morgen, 2 Minuten):
+#   1. Maestro Control Center oeffnen, AR10-Settings sind geladen
+#   2. Pro Kanal Min/Max ablesen
+#   3. Unten eintragen — REIHENFOLGE IST DIE SIM-JOINT-REIHENFOLGE, nicht die
+#      Maestro-Kanalnummer! Mapping (sim joint -> Maestro-Kanal):
+#      j0/j1 Daumen -> ch18/19 | j2/j3 Pinky -> ch16/17 | j4/j5 Ring -> ch14/15
+#      j6/j7 Mittel -> ch12/13 | j8/j9 Zeige -> ch10/11
+#   4. Kommentarzeichen vor servo_min/servo_max entfernen
+#
+# Solange die Eintraege auskommentiert sind, gelten die Defaults (4200/7700).
+#
+# servo_min: [4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200]
+# servo_max: [7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700]
