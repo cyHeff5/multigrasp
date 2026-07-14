@@ -28,8 +28,9 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from hardware.ar10 import AR10Interface
-from sim.hand      import CONTROL_JOINTS, SERVO0_INIT
+from hardware.ar10             import AR10Interface
+from hardware.contact_detector import ContactDetector, QDeltaBaseline
+from sim.hand                  import CONTROL_JOINTS, SERVO0_INIT
 
 
 _REPO_ROOT      = Path(__file__).resolve().parent.parent
@@ -48,7 +49,9 @@ def load_policy(model_path: str):
         zip_path = Path(model_path + ".zip")
     if not zip_path.exists():
         raise FileNotFoundError(f"Policy not found: {zip_path}")
-    return PPO.load(str(zip_path.with_suffix("")))
+    return PPO.load(str(zip_path.with_suffix("")),
+                    custom_objects={"learning_rate": 3e-4,
+                                    "lr_schedule": lambda _: 3e-4})
 
 
 def run_episode(env, policy, seed: int, options: dict | None = None) -> dict:
@@ -84,6 +87,49 @@ def load_real_thresholds(cfg: dict) -> dict[str, float]:
     print(f"[policy-runner] Kalibrierte Thresholds: "
           + "  ".join(f"{f}={v:.4f}" for f, v in out.items()))
     return out
+
+
+def load_contact_detector(cfg: dict) -> ContactDetector | None:
+    """Baseline-korrigierter Detektor (siehe hardware/contact_detector.py).
+
+    None wenn contact_detector.enabled false ist -> alter Threshold-Pfad.
+    Faellt HART, wenn enabled aber Baseline fehlt oder mit anderer Rampe
+    kalibriert wurde — ein stiller Fallback auf den 0.05-Threshold wuerde
+    die Kugel-Grasps unbemerkt wieder kaputt machen.
+    """
+    det_cfg = cfg.get("contact_detector") or {}
+    if not det_cfg.get("enabled", False):
+        return None
+
+    path = _REPO_ROOT / det_cfg["baseline_file"]
+    if not path.exists():
+        raise FileNotFoundError(
+            f"contact_detector.enabled, aber Baseline fehlt: {path}\n"
+            f"Vor der Session fahren:  python -m eval.baseline_calibration "
+            f"--config <config> --port <COM>")
+    baseline = QDeltaBaseline.load(path)
+
+    cal_rate = baseline.meta.get("delta_norm")
+    cfg_rate = float(cfg["action"]["delta_norm"])
+    if cal_rate is not None and abs(float(cal_rate) - cfg_rate) > 1e-9:
+        raise ValueError(
+            f"Baseline mit delta_norm={cal_rate} kalibriert, Config nutzt "
+            f"{cfg_rate} — Baseline gilt nur fuer die kalibrierte Rampe. "
+            f"eval/baseline_calibration.py neu fahren.")
+
+    created = baseline.meta.get("created")
+    if created:
+        age_h = (datetime.datetime.now()
+                 - datetime.datetime.fromisoformat(created)).total_seconds() / 3600
+        if age_h > 12:
+            print(f"[policy-runner] WARN: Baseline ist {age_h:.0f} h alt "
+                  f"({created}) — Drift ueber Tage ungetestet, besser neu kalibrieren.")
+
+    detector = ContactDetector(det_cfg, cfg["finger_joints"], baseline)
+    print(f"[policy-runner] ContactDetector aktiv (Baseline {created}, "
+          f"residual_min={det_cfg['residual_min']}, "
+          f"startup_mask_q={det_cfg['startup_mask_q']}).")
+    return detector
 
 
 def default_step_dt(cfg: dict) -> float:
@@ -148,7 +194,8 @@ def pregrasp_q() -> list[float]:
 
 def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
                      thresholds: dict[str, float], n_steps_max: int,
-                     step_dt: float) -> dict:
+                     step_dt: float,
+                     detector: ContactDetector | None = None) -> dict:
     """Open hand to pregrasp, run policy closed-loop, freeze grip. Returns stats.
 
     Spiegelt die Trigger-State-Machine aus env.step(): sobald trigger_n Finger
@@ -173,15 +220,22 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
     ar10.send_q_target(list(q_target))
     time.sleep(1.0)
 
+    if detector is not None:
+        detector.reset()
+
     consecutive_contact = 0
     lift_triggered      = False
     stabilization_left  = 0
     steps_done          = 0
+    _dbg_log: list[str] = []
 
     t0 = time.perf_counter()
     for k in range(n_steps_max):
         # Observation spiegelt EXAKT env._observation: [contact_bits, q_groups].
-        contact  = _binary_obs(ar10, q_target, cfg["finger_joints"], fingers, thresholds)
+        if detector is not None:
+            contact = detector.update(q_target, ar10.read_q_measured())
+        else:
+            contact = _binary_obs(ar10, q_target, cfg["finger_joints"], fingers, thresholds)
         q_groups = np.array([q_target[CONTROL_JOINTS.index(g[0])] for g in groups],
                             dtype=np.float32)
         obs       = np.concatenate([contact, q_groups])
@@ -189,6 +243,8 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
         q_target  = _apply_action(action, q_target, cfg)
         ar10.send_q_target(q_target)
         steps_done = k + 1
+        if k < 10 or k % 50 == 0:
+            _dbg_log.append(f"step={k} obs={obs.tolist()} action={action.tolist()} q6={q_target[CONTROL_JOINTS.index('servo6')]:.3f} q7={q_target[CONTROL_JOINTS.index('servo7')]:.3f}")
 
         n_contact = int(contact.sum())
         if n_contact >= trigger_n:
@@ -219,6 +275,12 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
     if achieved_dt > step_dt * 1.25:
         print(f"  [warn] Loop-Rate {1.0/achieved_dt:.1f} Hz statt {1.0/step_dt:.1f} Hz "
               f"— serielle I/O langsamer als step_dt.")
+
+    dbg_path = Path(__file__).resolve().parent.parent / "artifacts" / "_dbg_episode.log"
+    dbg_path.parent.mkdir(parents=True, exist_ok=True)
+    with dbg_path.open("w", encoding="utf-8") as f:
+        f.write("\n".join(_dbg_log))
+    print(f"  [dbg] {len(_dbg_log)} Eintraege -> {dbg_path}")
 
     return {
         "q_final":     list(q_target),
@@ -274,7 +336,9 @@ def main() -> None:
     with open(args.config, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
-    thresholds  = load_real_thresholds(cfg)
+    detector    = load_contact_detector(cfg)
+    # Alte Threshold-Logik nur noch als Fallback (contact_detector.enabled: false).
+    thresholds  = {} if detector is not None else load_real_thresholds(cfg)
     step_dt     = args.step_dt if args.step_dt is not None else default_step_dt(cfg)
     n_steps_max = cfg["episode"]["max_steps"]
 
@@ -307,7 +371,8 @@ def main() -> None:
             last_label = label
 
             t_start = datetime.datetime.now()
-            stats   = run_real_episode(ar10, policy, cfg, thresholds, n_steps_max, step_dt)
+            stats   = run_real_episode(ar10, policy, cfg, thresholds, n_steps_max,
+                                       step_dt, detector=detector)
             t_end   = datetime.datetime.now()
             if not stats["triggered"]:
                 print("  [warn] Kein Trigger — Griff lief bis max_steps.")

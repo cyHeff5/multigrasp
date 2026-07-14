@@ -49,6 +49,24 @@ observation:
   threshold: 0.05
   threshold_range: [0.02, 0.08]
 
+# Baseline-korrigierte Kontakterkennung auf der ECHTEN Hand (nur real, nicht Sim).
+# Hintergrund + alle Messwerte: artifacts/analysis/SENSOR_ANALYSIS_FINDINGS.md.
+# Der q_delta-Tracking-Fehler ist systematisch und reproduzierbar (Zyklus-Std
+# ~0.003); nach Abzug einer pro Session kalibrierten Baseline (eval/
+# baseline_calibration.py) sinkt der effektive Threshold von 0.05 auf ~0.012.
+# enabled: false -> alter Pfad (real_threshold.yaml / observation.threshold).
+contact_detector:
+  enabled: true
+  baseline_file: artifacts/calibration/qdelta_baseline.yaml
+  residual_min: 0.012      # Untergrenze des Residuum-Thresholds
+  sigma_k: 4.0             # Threshold = max(residual_min, sigma_k * baseline_std(q_target))
+  persistence: 3           # Residuum muss N Steps in Folge drueber liegen -> Bit setzt
+  release_factor: 0.5      # Hysterese: Bit faellt erst wenn Residuum < release_factor*Threshold
+  startup_mask_q: 0.13     # q_target darunter -> Bit immer 0 (Servo-Anlauf-Totzone, Peaks bis 0.072)
+  settle_steps: 15         # nach Target-Stopp (Cap/Pause): Joint so lange maskieren, bis q_delta gesettelt ist
+  cusum_drift: 0.003       # CUSUM-Toleranz pro Step (~1x Zyklus-zu-Zyklus-Std)
+  cusum_margin: 1.2        # Alarmschwelle = margin * max Freilauf-CUSUM (aus Kalibrierung)
+
 reward:
   # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,
   # Shaping = gamma*Phi(s') - Phi(s). Policy-invariant + kein Toggle-Farming (siehe sim/reward.py).

@@ -14,6 +14,17 @@ Zwei Laptops: **Sawyer-Laptop** (drive_pregrasp) und **AR10-Laptop** (alles hier
 ## 1. Kalibrierung (AR10-Laptop, ~15 Min)
 
 ```bash
+# 1-NEU) q_delta-BASELINE fuer den ContactDetector (PFLICHT, ~2 Min, ohne Objekt):
+python -m eval.baseline_calibration --config configs/precision.yaml --port COM4
+#   10 Freilauf-CLOSE-Zyklen -> artifacts/calibration/qdelta_baseline.yaml.
+#   VOR JEDER SESSION NEU FAHREN (Drift ueber Tage ungetestet; der Runner
+#   warnt ab 12 h Alter und bricht ohne Datei hart ab).
+#   Hintergrund: artifacts/analysis/SENSOR_ANALYSIS_FINDINGS.md — Kontakt wird
+#   als Residuum gegen die Freilauf-Baseline erkannt (~0.012 statt 0.05).
+#   Gilt fuer precision (contact_detector.enabled: true). Power laeuft weiter
+#   auf dem alten Threshold-Pfad -> dafuer bleiben 1a-1c Pflicht. Fuer precision
+#   sind 1a-1c nur noetig, wenn der Detektor abgeschaltet wird (enabled: false).
+
 # 1a) OHNE Objekt — Rauschboden (Untergrenze, mean + 3*sigma):
 python -m eval.calibration --config configs/precision.yaml --port COM4 --phase free
 
@@ -58,6 +69,12 @@ Lift nicht lange warten — die Aktuatoren stehen unter Last.
 
 ## Woher die Zahlen kommen (Kurzbegruendung)
 
+- **ContactDetector (precision)**: q_delta ist kein Rauschen, sondern ein
+  reproduzierbarer Tracking-Fehler (Zyklus-Std ~0.003). Kontakt = Residuum
+  gegen die Session-Baseline > max(0.012, 4*sigma) fuer 3 Steps (+ CUSUM fuer
+  langsame Blockierung). Offline validiert: 0 False Positives auf 9 Freilauf-
+  Zyklen, Kugel-Trigger bei q~0.2-0.8 statt ~0.87. Details + Grenzen:
+  artifacts/analysis/SENSOR_ANALYSIS_FINDINGS.md.
 - **step_dt = substeps/sim_hz (20.8 ms)**: Training, Kalibrierung und Deployment
   laufen auf derselben Kontrollrate; der Runner nutzt Absolutzeit-Scheduling und
   warnt, wenn die serielle I/O langsamer ist.
