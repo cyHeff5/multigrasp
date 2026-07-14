@@ -1,0 +1,56 @@
+mode: real
+trials:
+- achieved_hz: 48.0
+  label: '1'
+  n_steps: 300
+  q_final:
+  - 0.5
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.5
+  - 1.0
+  - 0.5
+  t_end: '12:09:24.932'
+  t_start: '12:09:17.675'
+  trial: 1
+  triggered: false
+- achieved_hz: 48.0
+  label: '1'
+  n_steps: 300
+  q_final:
+  - 0.5
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.5
+  - 1.0
+  - 0.5
+  t_end: '12:09:35.778'
+  t_start: '12:09:28.521'
+  trial: 2
+  triggered: false
+- achieved_hz: 48.0
+  label: '1'
+  n_steps: 300
+  q_final:
+  - 0.5
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.5
+  - 1.0
+  - 0.5
+  t_end: '12:10:51.716'
+  t_start: '12:10:44.460'
+  trial: 3
+  triggered: false

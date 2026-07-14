@@ -48,6 +48,8 @@ class AR10Interface:
         speed: int = 100,
         acceleration: int = 0,
         input_calibration_file: Optional[str] = None,
+        adc_reads: int = 1,
+        ema_alpha: Optional[float] = None,
     ):
         # Prioritaet: explizite Parameter > servo_limits.yaml > Defaults.
         file_min, file_max = self._load_servo_limits()
@@ -56,6 +58,11 @@ class AR10Interface:
         self._q_target: List[float] = [0.0] * 10
         self._usb: Optional[serial.Serial] = None
         self._input_cal: dict = self._load_input_calibration(input_calibration_file)
+        self._adc_reads: int = max(1, adc_reads)
+        # EMA-Filter: q_ema = alpha * q_raw + (1-alpha) * q_ema_prev
+        # alpha=1.0 = kein Filter, alpha=0.3 = starke Glaettung.
+        self._ema_alpha: Optional[float] = ema_alpha
+        self._ema_state: Optional[List[float]] = None
 
         if com_port is not None:
             if serial is None:
@@ -198,18 +205,53 @@ class AR10Interface:
 
     def read_q_measured(self) -> List[float]:
         # Liest aktuelle Gelenkpositionen von den analogen Positionssensoren, normalisiert auf [0, 1].
+        # Bei adc_reads > 1 werden mehrere ADC-Samples pro Joint gemittelt (Rauschreduktion).
+        # Bei ema_alpha: zusaetzlich EMA-Glaettung ueber aufeinanderfolgende Aufrufe.
         # Im Mock-Mode wird q_target zurückgegeben.
         if self._usb is None:
             return list(self._q_target)
-        result = []
+        n = self._adc_reads
+        if n <= 1:
+            raw_norm = []
+            for i in range(10):
+                if i in self._input_cal:
+                    cal = self._input_cal[i]
+                    raw = self._read_input_channel(cal["input_channel"])
+                    raw_norm.append(self._normalize_input(raw, cal["open_real"], cal["closed_real"]))
+                else:
+                    raw_norm.append(0.0)
+        else:
+            # Multi-read: alle Joints N-mal lesen und mitteln.
+            accum = [0.0] * 10
+            cal_mask = [i in self._input_cal for i in range(10)]
+            for _ in range(n):
+                for i in range(10):
+                    if cal_mask[i]:
+                        accum[i] += self._read_input_channel(self._input_cal[i]["input_channel"])
+            raw_norm = []
+            for i in range(10):
+                if cal_mask[i]:
+                    cal = self._input_cal[i]
+                    raw_norm.append(self._normalize_input(accum[i] / n, cal["open_real"], cal["closed_real"]))
+                else:
+                    raw_norm.append(0.0)
+        return self._apply_ema(raw_norm)
+
+    def _apply_ema(self, raw: List[float]) -> List[float]:
+        # EMA-Filter auf die normalisierten Messwerte anwenden.
+        if self._ema_alpha is None:
+            return raw
+        a = self._ema_alpha
+        if self._ema_state is None:
+            self._ema_state = list(raw)
+            return list(raw)
         for i in range(10):
-            if i in self._input_cal:
-                cal = self._input_cal[i]
-                raw = self._read_input_channel(cal["input_channel"])
-                result.append(self._normalize_input(raw, cal["open_real"], cal["closed_real"]))
-            else:
-                result.append(0.0)
-        return result
+            self._ema_state[i] = a * raw[i] + (1.0 - a) * self._ema_state[i]
+        return list(self._ema_state)
+
+    def reset_ema(self) -> None:
+        # EMA-Zustand zuruecksetzen (z.B. nach Pregrasp-Wechsel).
+        self._ema_state = None
 
     def position_error_norm(self) -> float:
         # Mittlerer absoluter Fehler zwischen q_target und q_measured.
