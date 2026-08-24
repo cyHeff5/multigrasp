@@ -32,6 +32,13 @@ stabilization_steps: 30            # Schritte zwischen Trigger und Lift-Test
 n_target: 2                        # Reward zielt auf beide Finger (kein Einzelfinger-Pinch mehr)
 
 action:
+  # mode close_stay = alte Checkpoints ({stay, close} pro Gruppe).
+  # mode rate_probe = fuer NEUTRAINING mit servo_model: {Probe/Halten,
+  # langsam, schnell}. Die Probe nutzt das fast rauschfreie statische
+  # Regime der echten Hand (std ~0.001): blockierter Finger haelt sein
+  # q_delta, freier kollabiert in 5-15 Steps.
+  mode: close_stay
+  rates: {slow: 0.003, fast: 0.005}   # nur fuer mode rate_probe; fast = delta_norm
   delta_norm: 0.005                # max. Schrittgröße pro Policy-Step für Finger-Joints (normalisiert)
   thumb_abduction_delta: 0.005     # Schrittgröße für Daumen-Abduktion (servo0, bidirektional)
   thumb_abduction_range: [0.45, 0.55]  # erlaubter Positionsbereich für Daumen-Abduktion
@@ -66,6 +73,46 @@ contact_detector:
   settle_steps: 15         # nach Target-Stopp (Cap/Pause): Joint so lange maskieren, bis q_delta gesettelt ist
   cusum_drift: 0.003       # CUSUM-Toleranz pro Step (~1x Zyklus-zu-Zyklus-Std)
   cusum_margin: 1.2        # Alarmschwelle = margin * max Freilauf-CUSUM (aus Kalibrierung)
+  # Raten-Skalierung (Fix 2026-08-24): q_delta ist im Freilauf ~proportional zur
+  # kommandierten Rate (Zeitkonstante ~6 Steps). Die Baseline gilt fuer
+  # delta_norm; faehrt die Policy langsamer oder stop-and-go, wird die
+  # Erwartung mit v_ema/v_calib skaliert — sonst liegt ein Joint mit halber
+  # Rate dauerhaft ~ -0.013 unter der Baseline und kann nie triggern.
+  rate_scaling: true
+  rate_tau_steps: 6        # EMA-Zeitkonstante der Raten-Schaetzung (= Servo-tau)
+  std_floor: 0.001         # Untergrenze der skalierten Baseline-Std (statisches Rauschen)
+  restart_steps: 12        # Wiederanlauf nach Pause maskieren (Transient ungemessen -> konservativ; eval/pause_ramp_check.py liefert den echten Wert)
+  restart_pause_min: 5     # ab dieser Pausenlaenge gilt das naechste Anfahren als Wiederanlauf
+  use_in_sim: true         # bei servo_model.enabled: Detektor auch im Training (gleiche Bit-Semantik wie real)
+
+# Servo-Verhaltensmodell der echten AR10 fuer das TRAINING (sim/hand.py).
+# Alle Werte aus den Messungen vom 2026-07-08 (artifacts/analysis/
+# SENSOR_ANALYSIS_FINDINGS.md, Update 2026-08-24). enabled: true macht die
+# Sim-Observation realistisch (Freilauf-Lag, Anlauf-Totzone, Sensorfehler) und
+# schaltet die Kontakt-Bits auf den ContactDetector um (use_in_sim) — fuer ein
+# NEUTRAINING aktivieren; alte Checkpoints sind damit nicht kompatibel
+# (andere Bit-Statistik), darum default false.
+servo_model:
+  enabled: false
+  tau_close_s:        {min: 0.10, max: 0.17}   # gemessen 6-7 Steps @48 Hz (125-145 ms), pro Joint/Episode
+  tau_open_factor:    {min: 1.5,  max: 2.5}    # Oeffnen ~2x langsamer als Schliessen
+  startup_deadband_q: {min: 0.04, max: 0.075}  # Anlauf-Totzone Kaltstart (q_delta-Peak 0.05-0.075)
+  sensor_gain_err:    0.02       # +-Gain-Fehler der Input-Kalibrierung pro Joint (servo9 real -0.12 -> nachkalibrieren!)
+  sensor_offset:      0.008      # +-Offset pro Joint
+  adc_quant_q:        0.0017     # 1 ADC-Count in q-Einheiten
+  sensor_noise_std:   0.001      # statisches Rauschen (gemessen std ~0.001)
+  calib_tau_err:      0.15       # +-relativer Fehler der (synthetischen) Baseline ueber tau
+  calib_mean_err_q:   0.003      # +-flacher Baseline-Fehler (Session-Drift, gemessen +-0.01 ueber 13 min)
+  calib_sigma:        0.003      # angenommene Freilauf-Std der Baseline
+
+# Hub->Winkel-Nichtlinearitaet der 4-Stab-Mechanik (2026-08-24, Hersteller-
+# Rohdaten; Herleitung: ~/projects/multigrasp/ar10-doku/README.md). Reales q ist
+# eine HUB-Koordinate, die Sim rechnete bisher linear in den GELENKWINKEL.
+# assets/stroke_angle_curves.yaml aktiviert die Kennlinie (aendert die
+# Sim-Geometrie -> alte Checkpoints inkompatibel; erst nach Bestaetigung durch
+# den Foto-Sweep einschalten, LABOR_SESSION1.md Block D). null = linear (alt).
+kinematics:
+  stroke_angle_map: null
 
 reward:
   # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,

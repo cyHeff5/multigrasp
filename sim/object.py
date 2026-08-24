@@ -79,6 +79,12 @@ class GraspObject:
                               rollingFriction=0.01,
                               spinningFriction=0.01,
                               physicsClientId=client_id)
+            # URDF-Masse ueberschreiben, wenn eine gewogene reale Masse vorliegt
+            # (benchmark_masses.yaml). Ohne Flag bleibt die URDF-Masse (0.1 kg)
+            # erhalten — bewusst, damit alte Benchmark-Zahlen vergleichbar bleiben.
+            if spec.get("mass_is_measured"):
+                p.changeDynamics(object_id, -1, mass=float(spec["mass_kg"]),
+                                  physicsClientId=client_id)
             return cls(object_id, spec, client_id)  # loadURDF erstellt den Körper direkt, createMultiBody unten wird nicht gebraucht
 
         else:

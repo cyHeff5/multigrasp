@@ -10,6 +10,7 @@ import pybullet as p
 import pybullet_data
 
 from sim.hand     import CONTROL_JOINTS, SERVO0_INIT, HandModel
+from hardware.contact_detector import ContactDetector, synthetic_baseline
 from sim.object   import GraspObject
 from sim.pregrasp import compute_pregrasp
 from sim.reward   import step_reward, terminal_reward
@@ -76,9 +77,41 @@ class GraspEnv(gymnasium.Env):
         # Discrete close-or-stay pro Gruppe; eine Gruppe mit Daumen-Abduktion (servo0)
         # bekommt 3 Optionen (offen/stay/zu). Halbiert die "verschwendete" Action-Mass
         # die Box-Gauss bei max(0, a) hatte und macht den Random-Walk produktiver.
-        self.action_space = gymnasium.spaces.MultiDiscrete(
-            [3 if "servo0" in g else 2 for g in self._groups]
-        )
+        # Aktionsmodus:
+        #  - close_stay (Standard, alte Checkpoints): {0: stay, 1: close} pro Gruppe
+        #  - rate_probe: {0: Probe/Halten, 1: langsam, 2: schnell schliessen}.
+        #    Motivation (Messdaten 2026-07-08): im Stand ist das q_delta-Rauschen
+        #    der echten Hand ~0.001 statt ~0.003, und ein blockierter Finger
+        #    haelt sein q_delta waehrend einer Probe, ein freier kollabiert in
+        #    5-15 Steps -> die Probe ist der sauberste Kontaktbeweis. Die Policy
+        #    soll lernen, WANN sie schliesst und wann sie prueft; r_step macht
+        #    unnoetiges Proben teuer.
+        self._action_mode = self.cfg["action"].get("mode", "close_stay")
+        if self._action_mode == "rate_probe":
+            self.action_space = gymnasium.spaces.MultiDiscrete(
+                [3 for _ in self._groups]
+            )
+        else:
+            self.action_space = gymnasium.spaces.MultiDiscrete(
+                [3 if "servo0" in g else 2 for g in self._groups]
+            )
+
+        # Servo-Verhaltensmodell + Detektor-in-der-Sim: beides zusammen ergibt
+        # dieselbe Observation-Semantik wie auf der echten Hand (Runner nutzt
+        # denselben ContactDetector). Servo-Modell ohne Detektor ist verboten:
+        # der rohe threshold-Pfad wuerde den modellierten Freilauf-Lag (~0.03)
+        # sofort als Dauerkontakt lesen.
+        self._servo_cfg     = config.get("servo_model") or {}
+        self._servo_enabled = bool(self._servo_cfg.get("enabled", False))
+        det_cfg = config.get("contact_detector") or {}
+        self._det_in_sim = self._servo_enabled and bool(det_cfg.get("use_in_sim", True))
+        self._detector: ContactDetector | None = None
+        self._phys_lag: dict | None = None
+        if self._servo_enabled and not self._det_in_sim:
+            raise ValueError(
+                "servo_model.enabled braucht contact_detector.use_in_sim: true — "
+                "der rohe q_delta-Threshold kann den Freilauf-Lag des Modells "
+                "nicht von Kontakt trennen.")
 
         self._rng = np.random.default_rng()
         self._cid: int | None = None
@@ -135,6 +168,7 @@ class GraspEnv(gymnasium.Env):
         )
         self._hand = HandModel(
             self._hand_id, self.cfg["physics"], self._rng, client_id=self._cid,
+            servo_cfg=self._servo_cfg, kin_cfg=self.cfg.get("kinematics"),
         )
 
         # Anchor-Body + JOINT_FIXED Constraint einmal anlegen. Anchor und Hand starten
@@ -168,6 +202,10 @@ class GraspEnv(gymnasium.Env):
 
         if not self._world_built:
             self._build_world()
+            if self._det_in_sim:
+                # Einmal pro Env: nativen PyBullet-Tracking-Lag im Freilauf
+                # vermessen (Hand noch an der Platzhalter-Pose, kein Objekt).
+                self._phys_lag = self._measure_phys_lag()
 
         # Objekt: zufällig sampeln oder aus options übernehmen (Benchmark-Eval).
         # Masse und Reibung werden immer neu gezogen — auch wenn obj_spec übergeben wurde.
@@ -178,7 +216,10 @@ class GraspEnv(gymnasium.Env):
         sampler = self.cfg["sampler"]
         # Masse dichtebasiert (Dichte × Volumen) — sonst bekommen kleine/dünne Objekte
         # bei fester kg-Range absurde Dichten (dünner Zylinder -> 37 g/cm³).
-        self._obj_spec["mass_kg"] = sample_mass_kg(self._obj_spec, sampler, self._rng)
+        # Ausnahme: Benchmark-Specs mit gewogener realer Masse (mass_is_measured)
+        # behalten sie — sonst waere der Sim<->Real-Vergleich konfundiert.
+        if not self._obj_spec.get("mass_is_measured"):
+            self._obj_spec["mass_kg"] = sample_mass_kg(self._obj_spec, sampler, self._rng)
         self._obj_spec["lateral_friction"] = float(self._rng.uniform(
             sampler["lateral_friction"]["min"], sampler["lateral_friction"]["max"]
         ))
@@ -224,6 +265,11 @@ class GraspEnv(gymnasium.Env):
         if self._substeps_range is not None:
             self._substeps = int(self._rng.integers(
                 self._substeps_range[0], self._substeps_range[1] + 1))
+        control_dt = self._substeps / float(self.cfg["episode"]["sim_hz"])
+        self._hand.set_control_dt(control_dt)
+
+        if self._det_in_sim:
+            self._detector = self._build_sim_detector(control_dt)
 
         # Hand-Gelenke auf offene Pregrasp-Startpose zuruecksetzen (Velocity = 0).
         start_q = [SERVO0_INIT if i == 0 else 0.0 for i in range(len(CONTROL_JOINTS))]
@@ -341,7 +387,91 @@ class GraspEnv(gymnasium.Env):
         return obs, reward, False, False, self._info(n_contact, lifted=False)
 
     # Observation 
+    def _measure_phys_lag(self) -> dict:
+        # Der PyBullet-Positionsregler traegt einen eigenen Freilauf-Lag
+        # (~0.006-0.01, kraft-/daempfungsabhaengig), der NICHT aus dem
+        # Servo-Modell kommt. Die echte Session-Kalibrierung misst so etwas
+        # automatisch mit — hier: eine CLOSE-Rampe mit umgangenem Servo-Modell
+        # fahren und qd(q) pro Joint aufzeichnen. Kostet einmalig ~1000
+        # Physik-Steps.
+        watched = [j for js in self._finger_joints.values() for j in js]
+        rate    = float(self.cfg["action"]["delta_norm"])
+        caps    = self.cfg["action"].get("pip_caps", {})
+        start_q = [SERVO0_INIT if i == 0 else 0.0 for i in range(len(CONTROL_JOINTS))]
+
+        servo_was = self._hand._servo_enabled
+        self._hand._servo_enabled = False      # Motor folgt q_target direkt
+        self._hand.teleport_to(start_q)
+        q = list(start_q)
+        log = {j: ([], []) for j in watched}
+        for _ in range(int(1.0 / rate) + 30):
+            for j in watched:
+                idx = CONTROL_JOINTS.index(j)
+                q[idx] = min(caps.get(j, 1.0), q[idx] + rate)
+            self._hand.apply_q_target(q)
+            for _ in range(self._substeps):
+                p.stepSimulation(physicsClientId=self._cid)
+            qm = self._hand.q_measured()       # ohne Sensor-Modell (Servo aus)
+            for j in watched:
+                idx = CONTROL_JOINTS.index(j)
+                log[j][0].append(q[idx])
+                log[j][1].append(q[idx] - qm[idx])
+        self._hand._servo_enabled = servo_was
+        self._hand.teleport_to(start_q)
+        out = {}
+        for j in watched:
+            qs, ds = np.asarray(log[j][0]), np.asarray(log[j][1])
+            order  = np.argsort(qs)
+            out[j] = (qs[order], ds[order])
+        return out
+
+    def _build_sim_detector(self, control_dt: float) -> ContactDetector:
+        # Pro Episode: synthetische Freilauf-Baseline aus den WAHREN Servo-
+        # Parametern der Episode, beaufschlagt mit einem randomisierten
+        # Kalibrierfehler (Session-Drift, ungenaue Kalibrierung). Darauf laeuft
+        # EXAKT der Produktions-ContactDetector — Training und echte Hand
+        # teilen damit Code und Bit-Semantik.
+        sc      = self._servo_cfg
+        det_cfg = self.cfg["contact_detector"]
+        params  = self._hand.servo_params()
+        watched = [j for js in self._finger_joints.values() for j in js]
+
+        tau_err  = float(sc.get("calib_tau_err", 0.15))
+        mean_err = float(sc.get("calib_mean_err_q", 0.003))
+        sigma    = float(sc.get("calib_sigma", 0.003))
+        v_calib  = float(self.cfg["action"]["delta_norm"])
+
+        tau_steps = {j: params["tau_close_s"][j] / control_dt
+                        * (1.0 + self._rng.uniform(-tau_err, tau_err))
+                     for j in watched}
+        deadband  = {j: params["deadband_q"][j]
+                        * (1.0 + self._rng.uniform(-0.2, 0.2))
+                     for j in watched}
+        mean_errs = {j: float(self._rng.uniform(-mean_err, mean_err))
+                     for j in watched}
+        # Sensor-Statik der Episode (q_delta im Stand = -(gain*q + offset)):
+        # die Session-Kalibrierung der echten Hand misst diese Gerade mit —
+        # die synthetische Baseline bekommt sie deshalb auch (mean_errs
+        # modelliert den verbleibenden Kalibrierfehler).
+        statics = {j: (-params["sens_gain"][j], -params["sens_offset"][j])
+                   for j in watched}
+        baseline = synthetic_baseline(
+            watched, v_calib=v_calib, tau_steps=tau_steps, sigma=sigma,
+            deadband_q=deadband, mean_err_q=mean_errs, static_mean_q=statics,
+            phys_lag_q=self._phys_lag,
+            cusum_alarm=float(self._rng.uniform(0.02, 0.05)),
+        )
+        return ContactDetector(det_cfg, self._finger_joints, baseline)
+
     def _observation(self) -> np.ndarray:
+        if self._det_in_sim:
+            contact = self._detector.update(
+                self._hand.q_target(), self._hand.q_measured())
+            q_groups = np.array(
+                [self._hand.q_target()[CONTROL_JOINTS.index(g[0])]
+                 for g in self._groups], dtype=np.float32)
+            return np.concatenate([contact.astype(np.float32), q_groups])
+
         # Kontakt-Bits: 1 wenn mindestens ein Joint des Fingers q_delta > threshold.
         # threshold ist der pro Episode gezogene Wert (siehe reset).
         threshold = self._threshold
@@ -374,6 +504,10 @@ class GraspEnv(gymnasium.Env):
             if "servo0" in group:
                 step = self.cfg["action"]["thumb_abduction_delta"]
                 d = (-1.0 if a == 0 else 1.0 if a == 2 else 0.0) * step
+            elif self._action_mode == "rate_probe":
+                rates = self.cfg["action"]["rates"]
+                d = (0.0 if a == 0 else
+                     float(rates["slow"]) if a == 1 else float(rates["fast"]))
             else:
                 d = a * self.cfg["action"]["delta_norm"]
             for joint_name in group:

@@ -41,8 +41,32 @@ _HAND_DOF       = len(CONTROL_JOINTS)
 
 # ── Sim helpers ───────────────────────────────────────────────────────────────
 
-def load_policy(model_path: str):
-    """Load a stable-baselines3 PPO policy from disk."""
+class AlwaysClosePolicy:
+    # Skript-Baseline fuer "warum RL": schliesst jede Gruppe in jedem Step
+    # maximal (close_stay -> close, rate_probe -> schnell; servo0-Gruppe -> zu).
+    # Trigger/Lift laufen wie immer ueber die Zustandsmaschine der Env.
+    def __init__(self, cfg: dict):
+        import numpy as np
+        mode = cfg["action"].get("mode", "close_stay")
+        if mode == "rate_probe":
+            self._action = np.array([2] * len(cfg["action_groups"]))
+        else:
+            self._action = np.array(
+                [2 if "servo0" in g else 1 for g in cfg["action_groups"]])
+
+    def predict(self, obs, deterministic=True):
+        return self._action, None
+
+
+def load_policy(model_path: str, cfg: dict | None = None):
+    """Load a stable-baselines3 PPO policy from disk.
+
+    model_path "always_close" liefert stattdessen die Skript-Baseline
+    (braucht cfg fuer den Action-Space)."""
+    if model_path == "always_close":
+        if cfg is None:
+            raise ValueError("load_policy('always_close') braucht cfg.")
+        return AlwaysClosePolicy(cfg)
     from stable_baselines3 import PPO
     zip_path = Path(model_path)
     if not zip_path.suffix:
@@ -117,6 +141,12 @@ def load_contact_detector(cfg: dict) -> ContactDetector | None:
             f"{cfg_rate} — Baseline gilt nur fuer die kalibrierte Rampe. "
             f"eval/baseline_calibration.py neu fahren.")
 
+    if baseline.meta.get("read_timing") != "pre_next_send":
+        print("[policy-runner] WARN: Baseline stammt aus einer Kalibrierung mit "
+              "altem Lese-Timing (direkt nach dem Senden gelesen) und liegt "
+              "dadurch ~+delta_norm zu hoch — eval/baseline_calibration.py "
+              "neu fahren (Fix 2026-08-24).")
+
     created = baseline.meta.get("created")
     if created:
         age_h = (datetime.datetime.now()
@@ -166,11 +196,17 @@ def _binary_obs(ar10: AR10Interface, q_target: list[float],
 def _apply_action(action: np.ndarray, q_target: list[float], cfg: dict) -> list[float]:
     """Mirror env._action_to_delta + PIP caps on the real hand."""
     delta = [0.0] * _HAND_DOF
+    mode  = cfg["action"].get("mode", "close_stay")
     for i, group in enumerate(cfg["action_groups"]):
         a = int(action[i])
         if "servo0" in group:
             step = cfg["action"]["thumb_abduction_delta"]
             d = (-1.0 if a == 0 else 1.0 if a == 2 else 0.0) * step
+        elif mode == "rate_probe":
+            # {0: Probe/Halten, 1: langsam schliessen, 2: schnell schliessen}
+            rates = cfg["action"]["rates"]
+            d = (0.0 if a == 0 else
+                 float(rates["slow"]) if a == 1 else float(rates["fast"]))
         else:
             d = a * cfg["action"]["delta_norm"]
         for joint_name in group:

@@ -38,6 +38,10 @@ from sim                  import GraspEnv
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _LOOKUP    = _REPO_ROOT / "artifacts" / "grasp_lookup_table.yaml"
+# Gewogene reale Massen der Benchmarkteile (Labor). Liegt die Datei vor, wird
+# die URDF-Masse (pauschal 0.1 kg) je Teil ueberschrieben — noetig fuer den
+# Sim<->Real-Vergleich. Format: {part_id: masse_kg}.
+_MASSES    = _REPO_ROOT / "artifacts" / "analysis" / "benchmark_masses.yaml"
 _PEDESTAL_H_DEFAULT = 0.04
 _SPAWN_XY = [0.0, 0.0]
 
@@ -78,6 +82,16 @@ def print_shapes_summary(rows: list[dict]) -> None:
 
 # ── Benchmark mode ────────────────────────────────────────────────────────────
 
+def _load_benchmark_masses() -> dict[int, float]:
+    if not _MASSES.exists():
+        return {}
+    with _MASSES.open(encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    masses = {int(k): float(v) for k, v in data.items()}
+    print(f"[eval-sim] Gewogene Massen fuer {len(masses)} Teile aus {_MASSES.name}")
+    return masses
+
+
 def _load_lookup() -> list[dict]:
     with _LOOKUP.open(encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -110,7 +124,7 @@ def _seated_obj_pose(urdf_path: Path, orientation_xyzw: list[float], ped_h: floa
     return [_SPAWN_XY[0], _SPAWN_XY[1], obj_z], obj_z - ped_h, size_m
 
 
-def _build_benchmark_episode(entry: dict, ped_h: float):
+def _build_benchmark_episode(entry: dict, ped_h: float, masses: dict[int, float] | None = None):
     pid       = entry["part_id"]
     gp        = entry["gp"]
     urdf_path = benchmark_part_urdf(pid)
@@ -136,6 +150,9 @@ def _build_benchmark_episode(entry: dict, ped_h: float):
         "yaw_rad":               0.0,
         "size_cm":               size_m * 100.0,
     }
+    if masses and pid in masses:
+        spec["mass_kg"]          = masses[pid]
+        spec["mass_is_measured"] = True
     return spec, (list(hand_pos), list(hand_quat))
 
 
@@ -144,6 +161,7 @@ def run_benchmark_mode(env: GraspEnv, policy, grasp_type: str,
                        ped_h: float) -> list[dict]:
     flat   = _load_lookup()
     by_pid = {pid: [e for e in flat if e["part_id"] == pid] for pid in parts}
+    masses = _load_benchmark_masses()
 
     rows: list[dict] = []
     for pid in parts:
@@ -154,7 +172,7 @@ def run_benchmark_mode(env: GraspEnv, policy, grasp_type: str,
             continue
         for entry in entries:
             gp_id = entry["gp"]["id"]
-            built = _build_benchmark_episode(entry, ped_h)
+            built = _build_benchmark_episode(entry, ped_h, masses)
             if built is None:
                 print(f"\n[eval-sim] Part {pid}/{gp_id}: URDF missing — SKIPPED")
                 continue
@@ -234,7 +252,7 @@ def main() -> None:
     print(f"[eval-sim] mode       = {args.mode}")
     print(f"[eval-sim] model      = {args.model}")
 
-    policy = load_policy(args.model)
+    policy = load_policy(args.model, cfg=cfg)
     env    = GraspEnv(cfg, render_mode="human" if args.gui else None)
 
     if args.gui:

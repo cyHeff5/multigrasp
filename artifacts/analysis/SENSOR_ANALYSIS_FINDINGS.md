@@ -294,3 +294,90 @@ python analyze_sensors2.py   # Residuum-Trajektorien, CUSUM, Vergleich mit 0.05-
 python analyze_sensors3.py   # Statik-Tabelle, Settle-Verhalten, Slow-Close, Startup-Statistik
 ```
 (Skripte liegen in diesem Ordner; Pfade zeigen auf `artifacts/analysis/`. Benötigt pandas/numpy.)
+
+---
+
+## 8. Update 2026-08-24: Raten-Modell, Timing-Bug, Statik/Dynamik-Trennung
+
+Neue Auswertung derselben CSVs (Skripte unten geändert, Detektor überarbeitet,
+Servo-Modell für das Training gebaut). Alle Änderungen offline validiert:
+`python -m eval.test_detector_offline` → Freilauf 0/9 warme Zyklen mit False
+Positive, Kugel-Detektion erhalten, Raten-Skalierung Abschnitt 3.
+
+### 8.1 q_delta ist eine Funktion der RATE, nicht der Position
+
+q_delta/Rate ist über beide gemessenen Rampen konstant: servo6 τ ≈ 6.0/5.6
+Steps (fast/slow), servo8 ≈ 6.8/7.0 → **Verzögerungsglied 1. Ordnung, τ ≈
+125–145 ms**. Beim Öffnen ist der Lag ~2× (−0.056/−0.060 mid-ramp).
+Konsequenz: die Baseline (konstante Rampe delta_norm) gilt NICHT für
+stop-and-go. Slow-Rampe gegen fast-Baseline: Median-Residuum −0.013 (=
+komplettes Detektionsbudget), 58–62 % der Samples außerhalb ±0.012. Mit
+ratenskalierter Erwartung (×0.6): Median −0.0007/+0.0005, 0.6–2.5 % außerhalb.
+**Fix:** `contact_detector.rate_scaling` — Erwartung = Statik + (v_ema/v_calib)
+· Dynamik, v_ema = EMA der kommandierten Rate mit τ=6 Steps.
+Die Power-Policy fährt stop-and-go (Tastverhältnis je Joint 0.39–0.97,
+Stillstände median 30 Steps, in Sim gemessen) — ohne Skalierung erklärt das
+BEIDE Fehlbilder: nie triggern (Joint dauerhaft unter Baseline, CUSUM klemmt
+bei 0) und zu früh triggern (Wiederanlauf-Spike gegen Vollrate-Baseline).
+
+### 8.2 Statik ≠ Dynamik
+
+Der Settle-Offset im Stand ist ein statischer Sensorfehler (Gain/Offset der
+Input-Kalibrierung) und NICHT ratenabhängig. Die Baseline hat jetzt zwei
+Komponenten: Bewegungs-Bins (ssm==0) und Statik-Bins (ssm≥settle_steps),
+linear interpoliert/extrapoliert. Nur die Dynamik wird skaliert. Ohne die
+Trennung erzeugte die Skalierung am servo7-Cap False Positives (Settle-Drift
+dort bis +0.022 — gegen skalierte Erwartung ~0). `eval/baseline_calibration.py`
+nimmt dafür jetzt Statik-Phasen auf (35 Steps offen, 45 Steps am Cap).
+
+### 8.3 Timing-Bug in der Kalibrierung (behoben)
+
+Kalibrierung las q_measured direkt nach dem Senden (~2 ms), der Policy-Runner
+liest am Anfang des nächsten Steps (~dt=21 ms nach dem Senden). Der Servo holt
+in dt ~einen Step auf → **Baseline systematisch ~+delta_norm (0.005) zu hoch =
+40 % des Residuum-Budgets.** Fix: Kalibrierung (und servo_analysis CLOSE/OPEN)
+warten jetzt den Step-Slot ab und lesen dann. Baseline-meta trägt
+`read_timing: pre_next_send`; der Runner warnt bei alten Baselines.
+**Alle CSVs vom 08.07. sind mit dem alten Timing aufgenommen** (untereinander
+konsistent, absolut ~+0.005 hoch).
+
+### 8.4 Anlauf-Gate statt nur q-Maske
+
+Die Anlauf-Totzone streut über Zyklen und läuft bei warmem Start über die
+startup_mask_q hinaus (Freilauf-Zyklus 7: Bit bei Step 27). Der Detektor gibt
+einen Joint jetzt erst frei, wenn q_measured sich um >0.01 bewegt hat, und
+maskiert dann den Aufhol-Transienten mit der Wiederanlauf-Maske
+(`restart_steps`, konservativ 12 — **Messwert fehlt**, siehe 8.7).
+
+### 8.5 Nicht reproduzierbare Befunde (offen, vor Real-Eval klären)
+
+1. **Öffnen bleibt bei q≈0.19 hängen** (Run 13:36: Zyklen 2–5 starten bei
+   q_measured 0.18–0.20; Run 12:28 öffnete auf ~0.006). Verdacht: stilles
+   Maestro-Min/Max-Clipping (servo_limits.yaml!) — Block A der Real-Eval.
+2. **Statik-Vorzeichen wechselt zwischen Runs**: HOLD_CLOSED 12:28 = +0.006
+   (servo6/8), position_noise 13:38 bei q=0.9 = −0.023/−0.025. Vorgeschichte/
+   Erwärmung — Grund unklar; die Session-Kalibrierung fängt es pro Session ein.
+3. **servo9: Gain-Fehler −0.12/q** (delta@q0=0, delta@cap0.5=−0.060) — reiner
+   Kalibrierfehler, `joint_input_calibration.json` neu kalibrieren.
+
+### 8.6 Blockierung ist kein Stillstand
+
+Beim Kugel-Quetschen wächst das MCP-Residuum mit ~0.0007/Step ≈ **13 % der
+Rate** — der Finger kriecht weiter. Das Bewegtsignal ist also schwach; das
+statische Regime (std ~0.001) ist der stärkste Diskriminator: **Probe** =
+Target einfrieren, blockierter Finger hält q_delta, freier kollabiert in 5–15
+Steps (~20σ Abstand). Deshalb neuer Aktionsmodus `action.mode: rate_probe`
+({Probe, langsam, schnell} je Gruppe) für das Neutraining.
+
+### 8.7 Servo-Modell in der Sim + fehlende Messung
+
+`sim/hand.py` hat jetzt das Servo-Modell (τ randomisiert 0.10–0.17 s, Öffnen
+×1.5–2.5, Anlauf-Totzone 0.04–0.075, Sensor-Gain/Offset/ADC/Rauschen), env
+nutzt bei `servo_model.enabled` den echten ContactDetector mit synthetischer
+Baseline (wahre Episoden-Parameter + randomisierter Kalibrierfehler + einmal
+pro Env gemessener nativer PyBullet-Tracking-Lag). Smoke (12 Episoden, alter
+Checkpoint): 0 Bits vor physischem Kontakt, Bit-Latenz 7–145 Steps — die
+realistische Latenz-Streuung, gegen die trainiert werden soll.
+**Fehlende Messung:** Pause mitten in der Rampe + Wiederanlauf
+(`eval/pause_ramp_check.py`, ~3 min am echten Gerät) → ersetzt die
+konservativen Defaults restart_steps=12 und die Restart-Totzone des Modells.

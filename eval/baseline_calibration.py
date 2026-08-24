@@ -90,11 +90,38 @@ def main() -> None:
         qt_log: dict[str, list[float]] = {j: [] for j in joints}
         qd_log: dict[str, list[float]] = {j: [] for j in joints}
 
+        def _log_static(n_steps: int) -> None:
+            # Target steht — liefert die STATIK-Stuetzpunkte der Baseline
+            # (Settle-Offset der Sensorik, nicht ratenabhaengig; noetig fuer
+            # die Raten-Skalierung des Detektors). build_baseline() erkennt
+            # stehende Samples selbst ueber steps_since_move.
+            t0s = time.perf_counter()
+            for ks in range(n_steps):
+                pause_s = t0s + (ks + 1) * dt - time.perf_counter()
+                if pause_s > 0:
+                    time.sleep(pause_s)
+                q_meas_s = ar10.read_q_measured()
+                for j, idx in zip(joints, j_idxs):
+                    qt_log[j].append(q_target[idx])
+                    qd_log[j].append(q_target[idx] - q_meas_s[idx])
+
+        _log_static(35)          # Statik bei q=0 (offen)
+
         t0 = time.perf_counter()
         for k in range(max_close):
             for j, idx in zip(joints, j_idxs):
                 q_target[idx] = min(caps.get(j, 1.0), q_target[idx] + rate)
             ar10.send_q_target(list(q_target))
+
+            # WICHTIG: erst den Step-Slot abwarten, DANN lesen — exakt wie der
+            # Policy-Runner (liest am Anfang des naechsten Steps, ~dt nach dem
+            # Senden). Vorher wurde direkt nach dem Senden gelesen; der Servo
+            # holt waehrend dt ~einen Step auf, die Baseline lag dadurch
+            # systematisch ~delta_norm (0.005) zu hoch — 40% des
+            # Residuum-Budgets (Befund 2026-08-24).
+            pause = t0 + (k + 1) * dt - time.perf_counter()
+            if pause > 0:
+                time.sleep(pause)
 
             q_meas = ar10.read_q_measured()
             for j, idx in zip(joints, j_idxs):
@@ -108,9 +135,8 @@ def main() -> None:
             if all(q_target[idx] >= caps.get(j, 1.0) - 1e-9
                    for j, idx in zip(joints, j_idxs)):
                 break
-            pause = t0 + (k + 1) * dt - time.perf_counter()
-            if pause > 0:
-                time.sleep(pause)
+
+        _log_static(45)          # Statik am Cap (jeder Joint an SEINEM Cap)
 
         for j in joints:
             per_joint[j].append((np.array(qt_log[j]), np.array(qd_log[j])))
@@ -132,6 +158,7 @@ def main() -> None:
             "created":    datetime.datetime.now().isoformat(timespec="seconds"),
             "config":     Path(args.config).stem,
             "delta_norm": rate,
+            "read_timing": "pre_next_send",
             "pip_caps":   dict(caps),
             "n_cycles":   args.cycles,
             "step_dt_ms": round(dt * 1000, 2),

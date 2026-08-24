@@ -33,6 +33,9 @@ stabilization_steps: 30            # Schritte zwischen Trigger und Lift-Test
 n_target: 3                        # Anzahl Finger für maximalen Step-Reward
 
 action:
+  # mode: siehe precision.yaml (rate_probe fuer Neutraining mit servo_model).
+  mode: close_stay
+  rates: {slow: 0.003, fast: 0.005}
   delta_norm: 0.005                # max. Schrittgröße pro Policy-Step für Finger-Joints (normalisiert)
   thumb_abduction_delta: 0.005     # Schrittgröße für Daumen-Abduktion (servo0, bidirektional)
   thumb_abduction_range: [0.45, 0.55]  # erlaubter Positionsbereich für Daumen-Abduktion
@@ -46,6 +49,57 @@ observation:
   # (0.0095, worst case substeps=4). Echte Schwelle: eval/calibration.py.
   threshold: 0.05
   threshold_range: [0.02, 0.08]
+
+# Baseline-korrigierte Kontakterkennung auf der ECHTEN Hand (nur real, nicht Sim).
+# Identische Parameter wie precision.yaml, eigene Baseline-Datei: Power beobachtet
+# 8 Joints (servo2-9) statt 4 und faehrt ohne pip_caps bis q=1.0, die Freilauf-
+# Kurve ist also eine andere. Vor der Session einmal fahren:
+#   python -m eval.baseline_calibration --config configs/power.yaml --port COM4
+# Ohne diesen Block faellt Power auf den alten Roh-Threshold zurueck, der laut
+# artifacts/analysis/SENSOR_ANALYSIS_FINDINGS.md in jedem Zyklus schon im
+# Servo-Anlauf (q~0.06) falsch triggert.
+contact_detector:
+  enabled: true
+  baseline_file: artifacts/calibration/qdelta_baseline_power.yaml
+  residual_min: 0.012
+  sigma_k: 4.0
+  persistence: 3
+  release_factor: 0.5
+  startup_mask_q: 0.13
+  settle_steps: 15
+  cusum_drift: 0.003
+  cusum_margin: 1.2
+  # Raten-Skalierung (Fix 2026-08-24): siehe precision.yaml. Fuer Power
+  # besonders wichtig — die seed_0_dr-Policy faehrt stop-and-go
+  # (Tastverhaeltnis je Joint 0.39-0.97, Stillstand median 30 Steps): ohne
+  # Skalierung liegt das Residuum langsamer Joints dauerhaft unter der
+  # Baseline (triggert nie), und jeder Wiederanlauf spikt (triggert falsch).
+  rate_scaling: true
+  rate_tau_steps: 6
+  std_floor: 0.001
+  restart_steps: 12
+  restart_pause_min: 5
+  use_in_sim: true
+
+# Servo-Verhaltensmodell fuer das Training — Parameter und Motivation: siehe
+# precision.yaml (identischer Block; Messdaten sind precision-Config, gelten
+# fuer dieselben Aktuatoren).
+servo_model:
+  enabled: false
+  tau_close_s:        {min: 0.10, max: 0.17}
+  tau_open_factor:    {min: 1.5,  max: 2.5}
+  startup_deadband_q: {min: 0.04, max: 0.075}
+  sensor_gain_err:    0.02
+  sensor_offset:      0.008
+  adc_quant_q:        0.0017
+  sensor_noise_std:   0.001
+  calib_tau_err:      0.15
+  calib_mean_err_q:   0.003
+  calib_sigma:        0.003
+
+# Hub->Winkel-Nichtlinearitaet der 4-Stab-Mechanik — siehe precision.yaml.
+kinematics:
+  stroke_angle_map: null
 
 reward:
   # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,

@@ -135,7 +135,9 @@ def main() -> None:
     bl_kwargs = dict(startup_mask_q=float(det_cfg["startup_mask_q"]),
                      settle_steps=int(det_cfg["settle_steps"]),
                      cusum_drift=float(det_cfg["cusum_drift"]),
-                     cusum_margin=float(det_cfg["cusum_margin"]))
+                     cusum_margin=float(det_cfg["cusum_margin"]),
+                     # Rampe der 08.07.-CSVs; noetig fuer die Raten-Skalierung
+                     meta={"delta_norm": float(cfg["action"]["delta_norm"])})
 
     free = _free_cycles(joints)
     n_free = len(free[joints[0]])
@@ -194,6 +196,41 @@ def main() -> None:
                   f"| alt {fmt_q(grp, old['first_bit'][f])}")
         print(f"    TRIGGER: neu {fmt_q(grp, new['trigger_step']):22s} "
               f"| alt {fmt_q(grp, old['trigger_step'])}")
+
+    # ── 3. Raten-Skalierung: langsame Rampe gegen schnelle Baseline ──────────
+    # Kern des Fixes vom 2026-08-24: die Baseline gilt nur fuer die Rampe, mit
+    # der kalibriert wurde. Hier wird die langsame Freilauf-Rampe (delta_norm
+    # 0.003, 13:37) gegen die Baseline der schnellen (0.005, 13:36) gerechnet —
+    # einmal unskaliert (alter Detektor), einmal mit Raten-Skalierung 0.6.
+    print()
+    print("=" * 76)
+    print("3. RATEN-SKALIERUNG — slow-Rampe (0.003) vs. fast-Baseline (0.005)")
+    print("=" * 76)
+    fast_csv = _ANALYSIS / "servo_analysis_precision_20260708_133601.csv"
+    slow_csv = _ANALYSIS / "servo_analysis__temp_slow_20260708_133732.csv"
+    if not (fast_csv.exists() and slow_csv.exists()):
+        print("  CSVs fehlen — Abschnitt uebersprungen.")
+        return
+    fast = pd.read_csv(fast_csv);  fast = fast[fast["phase"].str.startswith("CLOSE")]
+    slow = pd.read_csv(slow_csv);  slow = slow[slow["phase"].str.startswith("CLOSE")]
+    scale = 0.003 / 0.005
+    res_min = float(det_cfg["residual_min"])
+    for j in ("servo6", "servo8"):
+        if f"{j}_q_delta" not in fast.columns:
+            continue
+        bmean = (fast.assign(q=fast[f"{j}_q_target"].round(3))
+                     .groupby("q")[f"{j}_q_delta"].mean())
+        sl = slow[slow[f"{j}_q_target"] >= float(det_cfg["startup_mask_q"])]
+        base = sl[f"{j}_q_target"].round(3).map(bmean)
+        ok   = base.notna()
+        for label, sc in (("unskaliert  ", 1.0), ("skaliert 0.6", scale)):
+            r = (sl[f"{j}_q_delta"] - sc * base)[ok]
+            out = (r.abs() > res_min).mean()
+            print(f"  {j} {label}: Residuum median {r.median():+.4f}  "
+                  f"p05 {r.quantile(.05):+.4f}  p95 {r.quantile(.95):+.4f}  "
+                  f"|res|>residual_min: {out:5.1%}")
+    print("\n  -> skaliert muss der Median ~0 sein und der Ausreisser-Anteil <5%"
+          "\n     (unskaliert: Median ~ -0.013 = ganzes Detektionsbudget verloren).")
 
 
 if __name__ == "__main__":

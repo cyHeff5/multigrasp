@@ -14,6 +14,8 @@ from __future__ import annotations
 import argparse
 import datetime
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -70,6 +72,9 @@ def main() -> None:
                         help="Suffix fuer den Modell-Ordner (seed_<N>_<tag>), haelt "
                              "Ablationslaeufe getrennt. Getaggte Laeufe ignoriert der "
                              "Sweep-Aggregator automatisch.")
+    parser.add_argument("--n-envs",     type=int, default=None,
+                        help="Anzahl paralleler Envs (Default: cpu_count). Auf dem "
+                             "Heimserver 3 setzen, damit ein Kern frei bleibt.")
     args = parser.parse_args()
 
     with open(args.config, encoding="utf-8") as f:
@@ -83,7 +88,7 @@ def main() -> None:
     ent_coef        = args.ent_coef    if args.ent_coef    is not None else ppo_cfg["ent_coef"]
 
     grasp_type = grasp_cfg["grasp_type"]
-    n_envs     = 1 if args.gui else os.cpu_count()
+    n_envs     = 1 if args.gui else (args.n_envs or os.cpu_count())
 
     # Optionaler Tag haelt Ablationslaeufe (gleicher Seed, andere Hyperparams) getrennt.
     seed_dir  = f"seed_{args.seed}" + (f"_{args.tag}" if args.tag else "")
@@ -103,6 +108,36 @@ def main() -> None:
     print(f"[train] ent_coef   = {ent_coef}")
     print(f"[train] checkpoints -> {ckpt_dir}")
     print(f"[train] logs       -> {log_dir}")
+
+    # Reproduzierbarkeit (RL_VERIFICATION.md §2.2): exaktes Kommando, alle
+    # Hyperparameter und beide Config-Inhalte neben die Modelle legen. Wird am
+    # Ende des Laufs um finished/total_timesteps ergaenzt.
+    def _git_state() -> dict:
+        try:
+            rev   = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_REPO_ROOT,
+                                   capture_output=True, text=True).stdout.strip()
+            dirty = subprocess.run(["git", "status", "--porcelain"], cwd=_REPO_ROOT,
+                                   capture_output=True, text=True).stdout.strip()
+            return {"commit": rev, "dirty": bool(dirty)}
+        except Exception:
+            return {"commit": None, "dirty": None}
+
+    run_meta = {
+        "command":         " ".join(sys.argv),
+        "started_at":      timestamp,
+        "seed":            args.seed,
+        "n_envs":          n_envs,
+        "total_timesteps": total_timesteps,
+        "lr_schedule":     lr_schedule,
+        "ent_coef":        ent_coef,
+        "resume":          args.resume,
+        "git":             _git_state(),
+        "grasp_config":    {"path": args.config,     "content": grasp_cfg},
+        "ppo_config":      {"path": args.ppo_config, "content": ppo_cfg},
+        "finished":        False,
+    }
+    with open(ckpt_dir / "run_meta.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(run_meta, f, default_flow_style=False, sort_keys=False)
 
     # Pro Run werden die Env-Seeds um args.seed * 1000 verschoben, damit verschiedene
     # Trainings-Seeds garantiert disjunkte Env-Seed-Bereiche haben (sonst würde z.B.
@@ -169,6 +204,12 @@ def main() -> None:
     final_path = ckpt_dir / "final"
     model.save(str(final_path))
     print(f"\n[train] Done. Final model saved to {final_path}.zip")
+
+    run_meta["finished"]        = True
+    run_meta["finished_at"]     = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_meta["model_timesteps"] = int(model.num_timesteps)
+    with open(ckpt_dir / "run_meta.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(run_meta, f, default_flow_style=False, sort_keys=False)
 
     train_env.close()
     eval_env.close()

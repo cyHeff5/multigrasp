@@ -140,6 +140,10 @@ def main() -> None:
                 cap = caps.get(j, 1.0)
                 q_target[idx] = min(cap, q_target[idx] + rate)
             ar10.send_q_target(list(q_target))
+            # Slot abwarten, dann lesen — gleiche Lese-Phase wie der Policy-
+            # Runner (Fix 2026-08-24; alte CSVs vom 08.07. lesen direkt nach
+            # dem Senden und liegen dadurch ~+delta_norm hoeher).
+            sleep_until(k, phase_t0)
             record(phase_name)
             all_closed = all(
                 q_target[idx] >= caps.get(j, 1.0) - 1e-9
@@ -147,7 +151,6 @@ def main() -> None:
             )
             if all_closed:
                 break
-            sleep_until(k, phase_t0)
 
     def do_hold(phase_name: str) -> None:
         print(f"\n  Phase: {phase_name}")
@@ -163,11 +166,11 @@ def main() -> None:
             for j, idx in zip(joints, j_idxs):
                 q_target[idx] = max(0.0, q_target[idx] - rate)
             ar10.send_q_target(list(q_target))
+            sleep_until(k, phase_t0)
             record(phase_name)
             all_open = all(q_target[idx] <= 1e-9 for _, idx in zip(joints, j_idxs))
             if all_open:
                 break
-            sleep_until(k, phase_t0)
 
     # --- Zyklen ---
     for cycle in range(n_cycles):

@@ -1,0 +1,34 @@
+# Hub->Winkel-Kennlinien der AR10-4-Stab-Mechanik.
+#
+# Quelle: "servo relations.ods" (Hersteller-Rohdaten, assets/ar10_description/;
+# Herleitung + Archiv-Funde: ~/projects/multigrasp/ar10-doku/README.md).
+# Reales q_norm ist linear im Aktuator-HUB (Puls und Poti sitzen beide auf dem
+# Lead Screw); der GELENKWINKEL haengt davon nichtlinear ab. Die Sim rechnete
+# bisher q linear in den Winkel — diese Datei liefert die Korrektur:
+#   winkel_norm = f(q),  f(0)=0, f(1)=1  (Endpunkte identisch, Form nichtlinear)
+#
+# STATUS: Spaltenzuordnung der ODS ist UNBESTAETIGT (keine Header). Hypothese:
+#   curve_a (mild progressiv)  = untere Gelenke (MCP/"lower")
+#   curve_b (stark progressiv) = obere Gelenke (PIP/"tip"); der grosse Sprung
+#   zwischen q 0.78 und 0.89 kann ein Messartefakt des Herstellers sein.
+# Entscheidung per Foto-Sweep (LABOR_SESSION1.md, Block D): Fotos bei
+# q 0.25/0.5/0.75 gegen sim_q*_nonlin.png vs. sim_q*.png halten.
+# Daumen (servo0/1): keine Daten -> bleibt linear.
+
+curves:
+  curve_a:   # ODS Spalten A/B: Hub 0-0.018 m -> 0.33-1.80 rad, normiert
+    q: [0.0, 0.1111, 0.2222, 0.3333, 0.4444, 0.5556, 0.6667, 0.7778, 0.8889, 1.0]
+    f: [0.0, 0.0952, 0.1905, 0.2925, 0.3878, 0.4898, 0.5986, 0.7143, 0.8435, 1.0]
+  curve_b:   # ODS Spalten D/E: Hub 0-0.018 m -> 0.39-1.80 rad, normiert
+    q: [0.0, 0.1111, 0.2222, 0.3333, 0.4444, 0.5556, 0.6667, 0.7778, 0.8889, 1.0]
+    f: [0.0, 0.0142, 0.0355, 0.0709, 0.1206, 0.1773, 0.2553, 0.3546, 0.7163, 1.0]
+
+joints:
+  servo2: curve_a
+  servo4: curve_a
+  servo6: curve_a
+  servo8: curve_a
+  servo3: curve_b
+  servo5: curve_b
+  servo7: curve_b
+  servo9: curve_b
