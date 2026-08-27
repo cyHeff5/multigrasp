@@ -81,7 +81,7 @@ contact_detector:
   rate_scaling: true
   rate_tau_steps: 6        # EMA-Zeitkonstante der Raten-Schaetzung (= Servo-tau)
   std_floor: 0.001         # Untergrenze der skalierten Baseline-Std (statisches Rauschen)
-  restart_steps: 12        # Wiederanlauf nach Pause maskieren (Transient ungemessen -> konservativ; eval/pause_ramp_check.py liefert den echten Wert)
+  restart_steps: 15        # GEMESSEN 2026-08-25 (pause_ramp_check, SENSOR_ANALYSIS_FINDINGS.md §9.5): Totzone median 9.5-11, max 14, Peak bis 0.062. 12 war zu KLEIN -> Fruehtrigger.
   restart_pause_min: 5     # ab dieser Pausenlaenge gilt das naechste Anfahren als Wiederanlauf
   use_in_sim: true         # bei servo_model.enabled: Detektor auch im Training (gleiche Bit-Semantik wie real)
 
@@ -112,7 +112,7 @@ servo_model:
 # Sim-Geometrie -> alte Checkpoints inkompatibel; erst nach Bestaetigung durch
 # den Foto-Sweep einschalten, LABOR_SESSION1.md Block D). null = linear (alt).
 kinematics:
-  stroke_angle_map: null
+  stroke_angle_map: null   # ENTSCHIEDEN 2026-08-25 per Foto-Sweep: Hersteller-Kennlinie widerlegt, siehe SENSOR_ANALYSIS_FINDINGS.md §9.6
 
 reward:
   # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,

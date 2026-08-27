@@ -1,20 +1,36 @@
-# Per-Kanal Servo-Limits der echten Hand, abgelesen aus dem Pololu Maestro
-# Control Center (Channel Settings: Min/Max in Quarter-Mikrosekunden).
+# Per-Kanal Servo-Limits der echten Hand — GEMESSEN 2026-08-25 (Laborsession 1).
 #
-# WARUM: Der Maestro clippt eingehende Targets STILL auf seine gespeicherten
-# Kanal-Limits. Sind unsere Limits weiter als seine, laufen q_target und echte
-# Position auseinander -> Phantom-q_delta -> falsche Kontakt-Bits.
+# Methode: der Maestro meldet ueber Get Position (0x90) den auf seine
+# gespeicherten Kanal-Limits GECLIPPTEN Zielwert zurueck. Ein Target weit
+# unterhalb jedes Limits (3000) liest damit das exakte Kanal-Minimum aus —
+# genauer als die Pulstreppe von eval/maestro_limit_probe.py (Aufloesung 250).
+# Rohdaten der Treppe: artifacts/analysis/maestro_limit_probe_20260825_133541.csv
 #
-# AUSFUELLEN (morgen, 2 Minuten):
-#   1. Maestro Control Center oeffnen, AR10-Settings sind geladen
-#   2. Pro Kanal Min/Max ablesen
-#   3. Unten eintragen — REIHENFOLGE IST DIE SIM-JOINT-REIHENFOLGE, nicht die
-#      Maestro-Kanalnummer! Mapping (sim joint -> Maestro-Kanal):
-#      j0/j1 Daumen -> ch18/19 | j2/j3 Pinky -> ch16/17 | j4/j5 Ring -> ch14/15
-#      j6/j7 Mittel -> ch12/13 | j8/j9 Zeige -> ch10/11
-#   4. Kommentarzeichen vor servo_min/servo_max entfernen
+# BEFUND: alle Grenzen sind Maestro-Softwarelimits, KEINE mechanischen
+# Anschlaege (nachgewiesen: Get Position meldet den geclippten Wert, nicht das
+# Kommando). Vier Kanaele weichen von den Werkssettings ab:
+#   ch18 4864 (Werk 4288), ch19 5504 (Werk 3968)  -> Daumen absichtlich begrenzt
+#   ch10 4288 (Werk 4544), ch11 4608 (Werk 5056)  -> Zeigefinger geoeffnet
+# Die Vorhersage aus LABOR_SESSION1.md (Werksclip auf ch10/ch11) ist damit
+# WIDERLEGT — das Board traegt keine reinen Werkssettings mehr.
 #
-# Solange die Eintraege auskommentiert sind, gelten die Defaults (4200/7700).
+# NEBENBEFUND: kein einziger Kanal clippt beim OEFFNEN (Target 7700 wird auf
+# allen zehn Kanaelen ungeclippt uebernommen, ADC offen 64-71). Die Hypothese
+# "Oeffnen bleibt bei q~0.19 haengen = oberes Clipping" (SENSOR_ANALYSIS_
+# FINDINGS.md §8.5.1) ist damit ebenfalls widerlegt.
 #
-# servo_min: [4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200, 4200]
-# servo_max: [7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700]
+# FOLGE fuer die Sim: bei der alten Skala 4200..7700 erreicht die echte Hand
+# auf q=1.0 nur   servo0 0.81 | servo1 0.63 | servo9 0.88   — die Policy
+# kommandiert Vollschluss, der Daumen steht bei zwei Dritteln. Ohne diese Datei
+# ist das ein permanentes Phantom-q_delta bis 0.37 = Dauer-Kontaktbit.
+#
+# Reihenfolge ist die SIM-JOINT-Reihenfolge servo0..servo9, nicht die
+# Maestro-Kanalnummer. Mapping siehe hardware/ar10.py.
+#   j0/j1 Daumen -> ch18/19 | j2/j3 Klein -> ch16/17 | j4/j5 Ring -> ch14/15
+#   j6/j7 Mittel -> ch12/13 | j8/j9 Zeige -> ch10/11
+
+servo_min: [4864, 5504, 4288, 3968, 4288, 3968, 4288, 3968, 4288, 4608]
+
+# Das echte Kanal-Maximum liegt auf allen zehn Kanaelen bei oder ueber 7700;
+# 7700 ist der Arbeitswert des Codes fuer "offen" und wird ungeclippt gesetzt.
+servo_max: [7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700, 7700]

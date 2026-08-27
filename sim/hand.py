@@ -91,8 +91,27 @@ class HandModel:
         self._sens_gain     = [0.0] * n
         self._sens_offset   = [0.0] * n
 
+        # Kontaktnachgiebigkeit als Feder (SENSOR_ANALYSIS_FINDINGS.md 9.9,
+        # gemessen 2026-08-25 mit visueller Ground Truth). Real gilt am Sensor:
+        #   - zwischen physischem Erstkontakt und messbarem Signal liegen
+        #     0.10-0.25 q Ueberfahrweg, in denen NICHTS messbar ist (onset),
+        #   - danach waechst das statische Restresiduum linear mit dem
+        #     Ueberfahrweg, Steigung k ~ 0.2-0.3 (starre Blockierung waere k=1).
+        # Die Feder sitzt physisch verteilt (Fingerglied, Getriebe, gefederter
+        # Daumen, Objekt) und ist im URDF nicht modelliert - sie muss es auch
+        # nicht sein: die Policy sieht ausschliesslich q_delta, also wird die
+        # gemessene Kennlinie direkt im Sensormodell reproduziert. Ohne das
+        # lernt rate_probe einen Erstkontakt-Detektor, den es real nicht gibt.
+        self._spring_cfg    = self._servo_cfg.get("contact_spring") or {}
+        self._spring_on     = self._servo_enabled and bool(self._spring_cfg)
+        self._spring_k      = [0.0] * n
+        self._spring_onset  = [0.0] * n
+        self._contact_q:  list[float | None] = [None] * n
+        self._free_steps    = [0] * n
+
         # Pro Episode randomisiert. Bounds werden gespeichert, damit randomize_dynamics()
         # die Werte bei jedem Reset neu ziehen kann ohne die Hand neu zu laden.
+        self._physics_cfg     = physics_cfg
         self._motor_force_cfg = physics_cfg["motor_force"]
         self._friction_cfg    = physics_cfg["fingertip_friction"]
         self._motor_force = _uniform(self._motor_force_cfg, rng)
@@ -107,6 +126,8 @@ class HandModel:
         self.joint_index  = self._build_joint_index()
         self.joint_limits = self._load_joint_limits()
         self._q_target: list[float] = [0.0] * len(CONTROL_JOINTS)
+
+        self._link_chain  = self._build_link_chain() if self._spring_on else {}
 
         self._init_dynamics()
         self._setup_dip_constraints()
@@ -144,6 +165,15 @@ class HandModel:
         for ee_name in FINGERTIP_EE_MAP.values():
             p.changeDynamics(self.hand_id, self.joint_index[ee_name],
                               lateralFriction=self._friction, physicsClientId=self._cid)
+        # Bullet legt um jede konvexe MESH-Kollision einen Sicherheitsabstand von
+        # 1.0 mm (an einer perfekten Box nachgemessen, 25.08.). Jeder Hand-Link
+        # meldet damit Kontakt einen Millimeter zu frueh — mehr als der
+        # Geometriefehler der Huellen selbst (p95 0.2-0.8 mm). 0.1 mm statt 0
+        # laesst Bullet numerischen Spielraum.
+        margin = float(self._physics_cfg.get("collision_margin_m", 0.0001))
+        for i in range(-1, p.getNumJoints(self.hand_id, physicsClientId=self._cid)):
+            p.changeDynamics(self.hand_id, i, collisionMargin=margin,
+                              physicsClientId=self._cid)
 
     def randomize_dynamics(self, rng: np.random.Generator) -> None:
         # Domain Randomization pro Episode auf der persistenten Hand: Motorkraft +
@@ -165,6 +195,15 @@ class HandModel:
             b  = float(sc.get("sensor_offset",   0.008))
             self._sens_gain   = [float(rng.uniform(-g, g)) for _ in range(n)]
             self._sens_offset = [float(rng.uniform(-b, b)) for _ in range(n)]
+        if self._spring_on:
+            n  = len(CONTROL_JOINTS)
+            sp = self._spring_cfg
+            # k und onset sind objekt-/positionsabhaengig (9.9, n=1 Zyklus) und
+            # werden deshalb pro Episode UND pro Joint gezogen, nicht fixiert.
+            self._spring_k     = [_uniform(sp["k"], rng)       for _ in range(n)]
+            self._spring_onset = [_uniform(sp["onset_q"], rng) for _ in range(n)]
+            self._contact_q    = [None] * n
+            self._free_steps   = [0] * n
 
     def _setup_dip_constraints(self) -> None:
         # PyBullet ignoriert URDF <mimic> Tags, deshalb wird die PIP-DIP Kopplung
@@ -225,6 +264,8 @@ class HandModel:
     def _advance_servo(self) -> None:
         # Ein Policy-Step Servo-Elektronik: Anlauf-Totzone, dann exponentielles
         # Nachfahren mit tau (Oeffnen langsamer als Schliessen).
+        if self._spring_on:
+            self._update_contact_state()
         dt = self._control_dt
         for idx in range(len(CONTROL_JOINTS)):
             qt = self._q_target[idx]
@@ -238,6 +279,45 @@ class HandModel:
                 tau *= self._tau_open_f[idx]
             self._q_servo[idx] = qs + (qt - qs) * (1.0 - float(np.exp(-dt / tau)))
 
+    def _build_link_chain(self) -> dict[int, list[int]]:
+        # Fuer jeden Link: welche CONTROL_JOINTS liegen auf dem Pfad von der
+        # Handbasis zu diesem Link. Ein Kontakt an einem Fingerglied blockiert
+        # genau die Gelenke proximal davon - damit laesst sich ein
+        # getContactPoints-Treffer ohne Namensheuristik auf Joints abbilden.
+        ctrl = {self.joint_index[n]: i for i, n in enumerate(CONTROL_JOINTS)}
+        chain: dict[int, list[int]] = {-1: []}
+        n_j = p.getNumJoints(self.hand_id, physicsClientId=self._cid)
+        for j in range(n_j):
+            parent = int(p.getJointInfo(self.hand_id, j, physicsClientId=self._cid)[16])
+            chain[j] = chain.get(parent, []) + ([ctrl[j]] if j in ctrl else [])
+        return chain
+
+    def _update_contact_state(self) -> None:
+        # Merkt je Joint, an welcher Position der Finger das Objekt zuerst
+        # beruehrt hat. Ground Truth ist getContactPoints - der Rueckstand des
+        # Gelenks gegenueber dem Servo-Kommando taugt NICHT als Kriterium, weil
+        # schon das normale Fahren rund 0.005 Rueckstand erzeugt.
+        # Freigabe erst nach release_steps kontaktfreien Schritten, damit ein
+        # kurz weggerutschter Kontaktpunkt den Ueberfahrweg nicht zuruecksetzt.
+        rel_max = int(self._spring_cfg.get("release_steps", 3))
+        touched: set[int] = set()
+        for c in p.getContactPoints(bodyA=self.hand_id, physicsClientId=self._cid):
+            if c[2] == self.hand_id:      # Selbstkontakt ist keine Objektlast
+                continue
+            touched.update(self._link_chain.get(c[3], ()))
+        for idx, name in enumerate(CONTROL_JOINTS):
+            if idx in touched:
+                self._free_steps[idx] = 0
+                if self._contact_q[idx] is None:
+                    pos = float(p.getJointState(self.hand_id, self.joint_index[name],
+                                                 physicsClientId=self._cid)[0])
+                    self._contact_q[idx] = self._angle_to_norm(name, pos)
+            elif self._contact_q[idx] is not None:
+                self._free_steps[idx] += 1
+                if self._free_steps[idx] >= rel_max:
+                    self._contact_q[idx] = None
+                    self._free_steps[idx] = 0
+
     def teleport_to(self, q_target: list[float]) -> None:
         # Setzt Gelenkwinkel direkt ohne Physik, nur für Episode-Reset verwenden.
         # DIP-Gelenke werden manuell auf die korrekte Startposition gesetzt.
@@ -245,6 +325,8 @@ class HandModel:
         self._q_target = q
         self._q_servo       = list(q)
         self._servo_started = [False] * len(CONTROL_JOINTS)
+        self._contact_q     = [None] * len(CONTROL_JOINTS)
+        self._free_steps    = [0] * len(CONTROL_JOINTS)
         for idx, name in enumerate(CONTROL_JOINTS):
             p.resetJointState(self.hand_id, self.joint_index[name],
                                self._norm_to_angle(name, q[idx]),
@@ -284,6 +366,15 @@ class HandModel:
             pos = float(p.getJointState(self.hand_id, self.joint_index[name],
                                          physicsClientId=self._cid)[0])
             q = self._angle_to_norm(name, pos)
+            if self._spring_on and self._contact_q[idx] is not None:
+                # Feder-Ersatzmodell statt starrer Blockierung (9.9):
+                # gemeldete Position = Servo-Kommando minus k mal Ueberfahrweg,
+                # gemessen ab Kontakt plus Onset-Totbereich. Daraus wird in
+                # q_delta_normalized automatisch q_target - q_servo (Tracking-Lag)
+                # PLUS k mal Ueberfahrweg (statisches Restresiduum) - genau die
+                # beiden Anteile, die 9.9 real getrennt vermessen hat.
+                over = self._q_servo[idx] - self._contact_q[idx] - self._spring_onset[idx]
+                q    = self._q_servo[idx] - self._spring_k[idx] * max(0.0, over)
             if self._servo_enabled:
                 q = (1.0 + self._sens_gain[idx]) * q + self._sens_offset[idx]
                 if noise > 0:

@@ -7,7 +7,9 @@
 # bisher q linear in den Winkel — diese Datei liefert die Korrektur:
 #   winkel_norm = f(q),  f(0)=0, f(1)=1  (Endpunkte identisch, Form nichtlinear)
 #
-# STATUS: Spaltenzuordnung der ODS ist UNBESTAETIGT (keine Header). Hypothese:
+# STATUS 2026-08-25: curve_b ist per Foto-Sweep WIDERLEGT (SENSOR_ANALYSIS_FINDINGS.md §9.6).
+# Die Sim bleibt linear, kinematics.stroke_angle_map ist in allen Configs null.
+# Datei bleibt als Archiv liegen. Urspruengliche (nicht haltbare) Hypothese:
 #   curve_a (mild progressiv)  = untere Gelenke (MCP/"lower")
 #   curve_b (stark progressiv) = obere Gelenke (PIP/"tip"); der grosse Sprung
 #   zwischen q 0.78 und 0.89 kann ein Messartefakt des Herstellers sein.

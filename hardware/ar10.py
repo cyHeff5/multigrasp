@@ -97,11 +97,29 @@ class AR10Interface:
         msb = (accel >> 7) & 0x7F
         self._send_command(chr(0x09), chr(channel), chr(lsb), chr(msb))
 
+    def _limits_by_channel(self) -> tuple:
+        # _servo_min/_servo_max sind in SIM-JOINT-Reihenfolge indiziert, die
+        # Target-Liste des 0x1F-Befehls dagegen in KANAL-Reihenfolge (ch10..ch19).
+        # Diese Umsortierung haelt beide auseinander.
+        lo = [0] * 10
+        hi = [0] * 10
+        for joint_idx, ch in enumerate(_CHANNELS):
+            lo[ch - 10] = self._servo_min[joint_idx]
+            hi[ch - 10] = self._servo_max[joint_idx]
+        return lo, hi
+
     def _set_all_channel_targets(self, targets: List[int]) -> None:
         # Alle 10 Servo-Targets in einem einzigen Maestro-Befehl senden (0x1F).
+        # targets ist nach KANAL indiziert (targets[0] = ch10), die Limits nach
+        # Sim-Joint — ohne die Umsortierung wuerde ch10/ch11 (sim servo8/9)
+        # gegen die Daumen-Limits geclippt. Solange alle Limits gleich waren
+        # (Default 4200/7700) blieb das unsichtbar; mit per-Kanal-Limits aus
+        # servo_limits.yaml verschiebt es servo8/9 still um bis zu 900 Puls
+        # (gefunden 2026-08-25, Laborsession 1).
+        lo, hi = self._limits_by_channel()
         args = [chr(0x1F), chr(10), chr(10)]
         for i, t in enumerate(targets):
-            t = max(self._servo_min[i], min(self._servo_max[i], t))
+            t = max(lo[i], min(hi[i], t))
             args.append(chr(t & 0x7F))
             args.append(chr((t >> 7) & 0x7F))
         self._send_command(*args)

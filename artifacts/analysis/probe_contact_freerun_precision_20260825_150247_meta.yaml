@@ -1,0 +1,16 @@
+mode: freerun
+config: configs/precision.yaml
+rate: 0.005
+grid: 0.05
+pause_steps: 40
+hold0_steps: 40
+dt_ms: 20.83
+joints:
+- servo6
+- servo7
+- servo8
+- servo9
+lead_joint: servo6
+detector: true
+markers: []
+read_timing: pre_next_send

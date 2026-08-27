@@ -7,9 +7,16 @@
     <origin xyz="-0.2749999988642571 2.084385308389118e-15 -0.04435847654730254" rpy="0 0 0" /></visual>
     <collision>
       <geometry>
-        <mesh filename="benchmark_parts_stl/benchmark_part_4_vhacd.obj" scale="0.01 0.01 0.01" />
+        <mesh filename="benchmark_parts_stl/hd/part_4/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-    <origin xyz="-0.2749999988642571 2.084385308389118e-15 -0.04435847654730254" rpy="0 0 0" /></collision>
+      <origin xyz="-0.2749999988642571 2.084385308389118e-15 -0.04435847654730254" rpy="0 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="benchmark_parts_stl/hd/part_4/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.2749999988642571 2.084385308389118e-15 -0.04435847654730254" rpy="0 0 0" />
+    </collision>
     <inertial>
       <mass value="0.1" />
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001" />

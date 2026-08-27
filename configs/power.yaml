@@ -77,7 +77,7 @@ contact_detector:
   rate_scaling: true
   rate_tau_steps: 6
   std_floor: 0.001
-  restart_steps: 12
+  restart_steps: 15        # gemessen 2026-08-25, siehe SENSOR_ANALYSIS_FINDINGS.md §9.5 (Totzone max 14)
   restart_pause_min: 5
   use_in_sim: true
 
@@ -99,7 +99,7 @@ servo_model:
 
 # Hub->Winkel-Nichtlinearitaet der 4-Stab-Mechanik — siehe precision.yaml.
 kinematics:
-  stroke_angle_map: null
+  stroke_angle_map: null   # ENTSCHIEDEN 2026-08-25 per Foto-Sweep: Hersteller-Kennlinie widerlegt, siehe SENSOR_ANALYSIS_FINDINGS.md §9.6
 
 reward:
   # Potential-Based Reward Shaping (Ng et al. 1999): Phi = w_contact * min(n_contact, n_target)/n_target,

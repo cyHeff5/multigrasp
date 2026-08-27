@@ -44,18 +44,37 @@ _HAND_DOF       = len(CONTROL_JOINTS)
 class AlwaysClosePolicy:
     # Skript-Baseline fuer "warum RL": schliesst jede Gruppe in jedem Step
     # maximal (close_stay -> close, rate_probe -> schnell; servo0-Gruppe -> zu).
-    # Trigger/Lift laufen wie immer ueber die Zustandsmaschine der Env.
+    #
+    # trigger_mode auto:   Trigger/Lift laufen ueber die Zustandsmaschine der Env.
+    # trigger_mode policy: die Env triggert nicht mehr selbst, also traegt die
+    #   Baseline die Zustandsmaschine SELBST — trigger_n Kontakt-Bits fuer
+    #   trigger_confirmation_steps aufeinanderfolgende Frames, gelesen aus der
+    #   Observation. Damit bleibt der Vergleich fair: die Baseline ist genau der
+    #   handgeschriebene Regler, den die Env vorher eingebaut hatte, und sie
+    #   sieht exakt dieselbe Information wie die Policy.
     def __init__(self, cfg: dict):
-        import numpy as np
         mode = cfg["action"].get("mode", "close_stay")
         if mode == "rate_probe":
             self._action = np.array([2] * len(cfg["action_groups"]))
         else:
             self._action = np.array(
                 [2 if "servo0" in g else 1 for g in cfg["action_groups"]])
+        self._policy_trigger = str(cfg.get("trigger_mode", "auto")) == "policy"
+        self._n_fingers = len(cfg["finger_joints"])
+        self._trigger_n = int(cfg["trigger_n"])
+        self._confirm   = int(cfg["trigger_confirmation_steps"])
+        self._streak    = 0
+
+    def reset(self) -> None:
+        self._streak = 0
 
     def predict(self, obs, deterministic=True):
-        return self._action, None
+        if not self._policy_trigger:
+            return self._action, None
+        n_contact = int(round(float(np.sum(np.asarray(obs)[:self._n_fingers]))))
+        self._streak = self._streak + 1 if n_contact >= self._trigger_n else 0
+        stop = 1 if self._streak >= self._confirm else 0
+        return np.append(self._action, stop), None
 
 
 def load_policy(model_path: str, cfg: dict | None = None):
@@ -81,6 +100,8 @@ def load_policy(model_path: str, cfg: dict | None = None):
 def run_episode(env, policy, seed: int, options: dict | None = None) -> dict:
     """Run a single sim episode with deterministic policy. Returns the final info dict."""
     obs, _ = env.reset(seed=seed, options=options)
+    if hasattr(policy, "reset"):
+        policy.reset()          # Skript-Baselines tragen eigenen Trigger-Zustand
     while True:
         action, _ = policy.predict(obs, deterministic=True)
         obs, _reward, terminated, _truncated, info = env.step(action)
@@ -252,6 +273,17 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
     confirm_steps   = cfg["trigger_confirmation_steps"]
     stabilize_steps = cfg["stabilization_steps"]
 
+    # Zweistufiger Probe-Trigger — exakter Spiegel von env._probe_step
+    # (Begruendung + Messbasis: sim/env.py __init__ bzw. RL_VERIFICATION 2e).
+    probe_cfg = cfg.get("trigger_probe") or {}
+    probe_on  = bool(probe_cfg.get("enabled"))
+    if probe_on and detector is None:
+        raise ValueError("trigger_probe braucht den ContactDetector "
+                         "(Session-Baseline kalibrieren, contact_detector.enabled).")
+    probe_state, probe_left, probe_cooldown = "closing", 0, 0
+    probe_tail: list = []
+    probes_failed = 0
+
     q_target = pregrasp_q()
     ar10.send_q_target(list(q_target))
     time.sleep(1.0)
@@ -276,23 +308,64 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
                             dtype=np.float32)
         obs       = np.concatenate([contact, q_groups])
         action, _ = policy.predict(obs, deterministic=True)
-        q_target  = _apply_action(action, q_target, cfg)
-        ar10.send_q_target(q_target)
+        if probe_on and probe_state == "probing":
+            ar10.send_q_target(q_target)      # Probe: halten, Aktion ueberstimmt
+        else:
+            q_target = _apply_action(action, q_target, cfg)
+            ar10.send_q_target(q_target)
         steps_done = k + 1
         if k < 10 or k % 50 == 0:
             _dbg_log.append(f"step={k} obs={obs.tolist()} action={action.tolist()} q6={q_target[CONTROL_JOINTS.index('servo6')]:.3f} q7={q_target[CONTROL_JOINTS.index('servo7')]:.3f}")
 
         n_contact = int(contact.sum())
-        if n_contact >= trigger_n:
-            consecutive_contact += 1
-        else:
-            consecutive_contact = 0
+        if probe_on and not lift_triggered:
+            if probe_state == "closing":
+                if probe_cooldown > 0:
+                    probe_cooldown -= 1
+                if n_contact >= int(probe_cfg.get("entry_n", 1)):
+                    consecutive_contact += 1
+                else:
+                    consecutive_contact = 0
+                if (probe_cooldown == 0
+                        and consecutive_contact >= int(probe_cfg.get("entry_steps", 3))):
+                    probe_state = "probing"
+                    probe_left  = int(probe_cfg.get("probe_steps", 25))
+                    probe_tail  = []
+                    print(f"\n  [probe] {n_contact} Finger Kontakt -> "
+                          f"{probe_left} Schritte halten und Residuum pruefen.")
+            else:
+                probe_left -= 1
+                diag   = detector.diagnostics()
+                resids = [d["resid"] for d in diag.values() if d.get("resid") is not None]
+                probe_tail.append(max(resids) if resids else None)
+                if probe_left <= 0:
+                    check   = int(probe_cfg.get("check_steps", 8))
+                    tail    = [r for r in probe_tail[-check:] if r is not None]
+                    confirm = float(probe_cfg.get("confirm_residual",
+                                    cfg["contact_detector"]["residual_min"]))
+                    if tail and float(np.mean(tail)) >= confirm:
+                        lift_triggered     = True
+                        stabilization_left = stabilize_steps
+                        print(f"  [probe] BESTAETIGT (Residuum {np.mean(tail):.4f}) -> "
+                              f"{stabilize_steps} Stabilisierungs-Schritte, dann Stopp.")
+                    else:
+                        probes_failed      += 1
+                        probe_cooldown      = int(probe_cfg.get("cooldown_steps", 20))
+                        consecutive_contact = 0
+                        r = float(np.mean(tail)) if tail else float("nan")
+                        print(f"  [probe] verworfen (Residuum {r:.4f}) -> weiter schliessen.")
+                    probe_state = "closing"
+        elif not probe_on:
+            if n_contact >= trigger_n:
+                consecutive_contact += 1
+            else:
+                consecutive_contact = 0
 
-        if not lift_triggered and consecutive_contact >= confirm_steps:
-            lift_triggered     = True
-            stabilization_left = stabilize_steps
-            print(f"\n  [trigger] {n_contact} Finger Kontakt -> "
-                  f"{stabilize_steps} Stabilisierungs-Schritte, dann Stopp.")
+            if not lift_triggered and consecutive_contact >= confirm_steps:
+                lift_triggered     = True
+                stabilization_left = stabilize_steps
+                print(f"\n  [trigger] {n_contact} Finger Kontakt -> "
+                      f"{stabilize_steps} Stabilisierungs-Schritte, dann Stopp.")
 
         if lift_triggered:
             stabilization_left -= 1
@@ -321,6 +394,7 @@ def run_real_episode(ar10: AR10Interface, policy, cfg: dict,
     return {
         "q_final":     list(q_target),
         "triggered":   lift_triggered,
+        "probes_failed": probes_failed,
         "n_steps":     steps_done,
         "achieved_dt": achieved_dt,
     }

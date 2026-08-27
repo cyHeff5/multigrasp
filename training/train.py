@@ -18,9 +18,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import yaml
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
 from stable_baselines3.common.vec_env  import SubprocVecEnv, VecMonitor
 
 from sim import GraspEnv
@@ -29,6 +30,25 @@ from sim import GraspEnv
 _REPO_ROOT  = Path(__file__).resolve().parent.parent
 _MODELS_DIR = _REPO_ROOT / "artifacts" / "models"
 _LOGS_DIR   = _REPO_ROOT / "artifacts" / "logs"
+
+
+class SuccessRateCallback(BaseCallback):
+    # Loggt rollout/success_rate, den Anteil erfolgreicher Episoden im
+    # Episoden-Puffer der letzten stats_window_size Episoden (SB3-Default 100).
+    #
+    # ep_rew_mean ist als Lernfortschritt schlecht lesbar: die Reward-Verteilung
+    # ist bimodal (Erfolg um +8, Fehlschlag um -6.5), der Mittelwert mischt beide
+    # Moden und hat deshalb eine Streuung von rund +/-6 um seinen eigenen Wert.
+    # Die Erfolgsrate ist der binaere Anteil und faellt einmal pro Rollout an,
+    # also rund 10x dichter als die 100k-Evals.
+    def _on_step(self) -> bool:
+        return True
+
+    def _on_rollout_end(self) -> None:
+        buf = self.model.ep_info_buffer
+        vals = [ep["is_success"] for ep in buf if "is_success" in ep]
+        if vals:
+            self.logger.record("rollout/success_rate", float(np.mean(vals)))
 
 
 def make_env(grasp_cfg: dict, seed: int, render: bool = False):
@@ -148,15 +168,16 @@ def main() -> None:
     train_env = VecMonitor(SubprocVecEnv([
         make_env(grasp_cfg, env_seed_base + i, render=(args.gui and i == 0))
         for i in range(n_envs)
-    ]))
+    ]), info_keywords=("is_success",))
     # Abstand zu den Training-Env-Seeds damit Eval-Episoden sich nicht überschneiden.
     eval_env = VecMonitor(SubprocVecEnv([
         make_env(grasp_cfg, env_seed_base + 900)
-    ]))
+    ]), info_keywords=("is_success",))
 
     # // n_envs weil VecEnv den Callback einmal pro vectorized step aufruft,
     # aber n_envs echte Schritte parallel gemacht werden.
     callbacks = [
+        SuccessRateCallback(),
         CheckpointCallback(
             save_freq=max(ppo_cfg["checkpoint_freq"] // n_envs, 1),
             save_path=str(ckpt_dir),

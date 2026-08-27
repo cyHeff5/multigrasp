@@ -7,9 +7,28 @@
     <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" /></visual>
     <collision>
       <geometry>
-        <mesh filename="benchmark_parts_stl/benchmark_part_10_vhacd.obj" scale="0.01 0.01 0.01" />
+        <mesh filename="benchmark_parts_stl/hd/part_10/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-    <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" /></collision>
+      <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="benchmark_parts_stl/hd/part_10/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="benchmark_parts_stl/hd/part_10/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="benchmark_parts_stl/hd/part_10/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0.40499999422776256 -1.3259230284498316e-09 -0.05208909565677426" rpy="0 0 0" />
+    </collision>
     <inertial>
       <mass value="0.1" />
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001" />

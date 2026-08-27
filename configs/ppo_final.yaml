@@ -1,0 +1,52 @@
+# PPO Hyperparameter (Stable-Baselines3).
+
+# Schritte pro Umgebung die gesammelt werden bevor ein Update stattfindet.
+# Gesamter Rollout-Buffer pro Update: n_steps * n_envs Transitions.
+n_steps:        2048
+
+# Mini-Batch Größe für den Gradient-Update.
+batch_size:     64
+
+# Wie oft der gesamte Rollout-Buffer pro Update durchlaufen wird.
+n_epochs:       10
+
+learning_rate:  3.0e-4
+
+# Discount-Faktor - wie weit die Policy in die Zukunft schaut.
+gamma:          0.995
+
+# GAE Lambda - Tradeoff zwischen Bias und Varianz im Advantage-Schätzer.
+gae_lambda:     0.95
+
+# Clipping der Policy-Update-Größe, verhindert zu große Schritte.
+clip_range:     0.2
+
+# Entropie-Bonus verhindert Kollaps zu deterministischer Strategie.
+ent_coef:       0.01
+
+# Lernraten-Fahrplan: constant (LR bleibt fix) oder linear (faellt linear auf 0).
+# linear daempft Late-Stage-Collapse - relevant fuer die instabile Precision-Policy.
+# Pro Lauf via --lr-schedule ueberschreibbar (Ablation constant vs linear).
+lr_schedule:    constant
+
+# Gewichtung des Value-Function-Loss relativ zum Policy-Loss.
+vf_coef:        0.5
+
+# Gradient Clipping gegen explodierende Gradienten.
+max_grad_norm:  0.5
+
+# Training-Setup
+# 2M statt 10M: der 5M-Sättigungslauf (seed_0) zeigt ein Plateau ab ~1M Steps,
+# alles darüber war nur Rauschen. 2M fängt die volle Lernleistung mit Puffer ein.
+total_timesteps: 2000000
+eval_freq:       25000      # 80 Messpunkte ueber 2M statt 20 - die Lernkurve braucht Aufloesung
+n_eval_episodes: 50         # 50 statt 100, damit die vierfache Punktzahl bezahlbar bleibt
+checkpoint_freq: 250000     # 8 Checkpoints statt 4 - jeder Kurvenabschnitt bleibt nachspielbar
+
+# Zweck dieser Config: die finalen Laeufe fuer die Realevaluierung.
+# Gegenueber ppo.yaml nur die Protokollierung veraendert, keine Hyperparameter.
+# Grund ist der Befund vom 26.08., dass eval_freq 100000 den gesamten
+# Lernvorgang in das erste Messintervall legt und die Kurve flach aussehen
+# laesst. 25000 loest die Kurve auf, den Bereich davor deckt ppo_finegrain.yaml
+# ab. checkpoint_freq 250000, damit sich jeder Abschnitt der Kurve spaeter
+# nachspielen laesst.

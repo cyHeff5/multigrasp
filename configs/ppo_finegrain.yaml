@@ -1,0 +1,51 @@
+# PPO Hyperparameter (Stable-Baselines3).
+
+# Schritte pro Umgebung die gesammelt werden bevor ein Update stattfindet.
+# Gesamter Rollout-Buffer pro Update: n_steps * n_envs Transitions.
+n_steps:        2048
+
+# Mini-Batch Größe für den Gradient-Update.
+batch_size:     64
+
+# Wie oft der gesamte Rollout-Buffer pro Update durchlaufen wird.
+n_epochs:       10
+
+learning_rate:  3.0e-4
+
+# Discount-Faktor - wie weit die Policy in die Zukunft schaut.
+gamma:          0.995
+
+# GAE Lambda - Tradeoff zwischen Bias und Varianz im Advantage-Schätzer.
+gae_lambda:     0.95
+
+# Clipping der Policy-Update-Größe, verhindert zu große Schritte.
+clip_range:     0.2
+
+# Entropie-Bonus verhindert Kollaps zu deterministischer Strategie.
+ent_coef:       0.01
+
+# Lernraten-Fahrplan: constant (LR bleibt fix) oder linear (faellt linear auf 0).
+# linear daempft Late-Stage-Collapse - relevant fuer die instabile Precision-Policy.
+# Pro Lauf via --lr-schedule ueberschreibbar (Ablation constant vs linear).
+lr_schedule:    constant
+
+# Gewichtung des Value-Function-Loss relativ zum Policy-Loss.
+vf_coef:        0.5
+
+# Gradient Clipping gegen explodierende Gradienten.
+max_grad_norm:  0.5
+
+# Training-Setup
+# 2M statt 10M: der 5M-Sättigungslauf (seed_0) zeigt ein Plateau ab ~1M Steps,
+# alles darüber war nur Rauschen. 2M fängt die volle Lernleistung mit Puffer ein.
+total_timesteps: 200000
+eval_freq:       5000       # feine Abtastung: der gesamte Lernvorgang liegt vor 100k Steps
+n_eval_episodes: 50         # 50 statt 100, damit 40 Messpunkte bezahlbar bleiben
+checkpoint_freq: 100000
+
+# Zweck dieser Config: Lernkurve am Anfang des Trainings aufloesen.
+# Mit eval_freq 100000 liegt der erste Messpunkt bei 100k Steps, und da sind
+# beide Policies bereits konvergiert (Power 86 %, Precision 88 %). Die Kurve
+# sieht dadurch flach aus, obwohl der Lernvorgang stattgefunden hat — er liegt
+# nur vollstaendig im ersten Messintervall. 200k Steps bei eval_freq 5000
+# ergeben 40 Punkte und zeigen den Anstieg.

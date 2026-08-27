@@ -3,6 +3,13 @@
 Ablauf fuer die Realevaluierung: Kalibrierung (~20 Min) + gefilmte Griff-Trials.
 Zwei Laptops: **Sawyer-Laptop** (drive_pregrasp) und **AR10-Laptop** (alles hier).
 
+**Ohne Gamepad** laeuft `drive_pregrasp` ueber die Tastatur — SPACE=A,
+BACKSPACE=B, X=X, Y=Y, A=LB, D=RB, ESC=Menu, Pfeiltasten=Stick. Fuer den
+Ablauf heisst das: D/A blaettern durch die Greifpunkte, SPACE bestaetigt,
+X gedrueckt halten faehrt an, Y ist die Feinjustierung, BACKSPACE waehlt neu,
+ESC beendet. Die Tasten gehen an das PyBullet-Fenster; laeuft keins, macht
+`hardware/gamepad.py` ein eigenes kleines Fenster auf, das den Fokus braucht.
+
 ## 0. Setup-Check (AR10-Laptop, 5 Min)
 
 1. Hand an COM-Port, Port-Namen merken (Geraetemanager, z.B. `COM4`).

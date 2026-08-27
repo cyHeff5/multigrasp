@@ -172,11 +172,18 @@ def main() -> None:
     finger_joints = cfg["finger_joints"]
     fingers = list(finger_joints.keys())
 
+    # Der echte ContactDetector (Session-Baseline aus eval/baseline_calibration.py).
+    # None, wenn contact_detector.enabled false ist -> nur der alte Threshold-Pfad.
+    from eval.policy_runner import load_contact_detector
+    detector = load_contact_detector(cfg)
+
     # CSV vorbereiten
     fieldnames = ["cycle", "step", "t_ms", "phase"]
     for j in joints:
         fieldnames += [f"{j}_q_target", f"{j}_q_measured", f"{j}_q_delta",
                        f"{j}_baseline_delta"]
+    if detector is not None:
+        fieldnames += [f"{f}_det_bit" for f in fingers]
     rows: list[dict] = []
 
     # Ergebnis-Sammlung pro Zyklus
@@ -201,7 +208,11 @@ def main() -> None:
         # Pro Joint: Step bei dem Abweichung und Threshold erstmals ueberschritten wird
         deviation_step: dict[str, int | None] = {j: None for j in joints}
         threshold_step: dict[str, int | None] = {j: None for j in joints}
+        # Pro Finger: Step bei dem der echte ContactDetector zuerst ein Bit setzt
+        detector_step: dict[str, int | None] = {f: None for f in fingers}
         human_step: int | None = None
+        if detector is not None:
+            detector.reset()
 
         # CLOSE-Rampe
         for k in range(max_close):
@@ -210,8 +221,22 @@ def main() -> None:
                 q_target[idx] = min(cap, q_target[idx] + rate)
             ar10.send_q_target(list(q_target))
 
+            # Slot abwarten, DANN lesen — gleiche Lese-Phase wie Policy-Runner,
+            # baseline_calibration und servo_analysis (Fix 2026-08-25; vorher
+            # las dieses Skript direkt nach dem Senden und lag dadurch
+            # ~+delta_norm hoeher als die Freilauf-Baseline, gegen die es
+            # vergleicht — siehe SENSOR_ANALYSIS_FINDINGS.md §8.3).
+            pause = t0 + (k + 1) * dt - time.perf_counter()
+            if pause > 0:
+                time.sleep(pause)
+
             q_meas = ar10.read_q_measured()
             t_ms = (time.perf_counter() - t0) * 1000
+
+            # Der echte ContactDetector laeuft mit: derselbe Code, dieselbe
+            # Session-Baseline und dieselben Configwerte wie im Deployment.
+            # Der alte Roh-Threshold bleibt als Vergleichsspur daneben stehen.
+            det_bits = detector.update(list(q_target), list(q_meas)) if detector else None
 
             row = {"cycle": cycle, "step": k, "t_ms": round(t_ms, 1), "phase": "CLOSE"}
             for j, idx in zip(joints, j_idxs):
@@ -232,6 +257,13 @@ def main() -> None:
                 # Threshold-Erkennung (wie Policy)
                 if threshold_step[j] is None and max(0.0, qd) > threshold:
                     threshold_step[j] = k
+
+            if det_bits is not None:
+                for fi, fname in enumerate(fingers):
+                    bit = int(det_bits[fi])
+                    row[f"{fname}_det_bit"] = bit
+                    if bit and detector_step[fname] is None:
+                        detector_step[fname] = k
 
             rows.append(row)
 
@@ -282,10 +314,32 @@ def main() -> None:
                 print(f"    {j}: Keine Abweichung erkannt.")
                 result[f"{j}_latency_steps"] = None
 
+        if detector is not None:
+            # Ground Truth fuer den physischen Kontakt ist die frueheste
+            # Abweichung vom Freilauf ueber alle Joints des Fingers.
+            print()
+            for fname, fjoints in finger_joints.items():
+                ds = [deviation_step[j] for j in fjoints if deviation_step.get(j) is not None]
+                gt = min(ds) if ds else None
+                bs = detector_step[fname]
+                result[f"{fname}_detector_step"] = bs
+                result[f"{fname}_gt_step"]       = gt
+                if bs is None:
+                    print(f"    {fname}: Detektor-Bit NIE gesetzt"
+                          f"{'' if gt is None else f' (physischer Kontakt @ step {gt})'}"
+                          f"   <- Fehlmodus B")
+                elif gt is None:
+                    print(f"    {fname}: Detektor-Bit @ step {bs}, aber KEINE Abweichung "
+                          f"vom Freilauf   <- Fehlalarm")
+                else:
+                    lat = bs - gt
+                    result[f"{fname}_det_latency_steps"] = lat
+                    flag = "   <- FRUEHTRIGGER" if lat < -3 else ""
+                    print(f"    {fname}: Kontakt @ step {gt} -> Detektor-Bit @ step {bs}"
+                          f"  = {lat:+d} Steps ({lat * dt * 1000:+.0f} ms){flag}")
+
         if human_step is not None:
             print(f"    HUMAN: Kontakt gesehen @ step {human_step} ({human_step * dt * 1000:.0f} ms)")
-        else:
-            print(f"    HUMAN: Kein Tastendruck registriert.")
         cycle_results.append(result)
 
     # Hand schliessen / aufraeumen

@@ -88,13 +88,82 @@ class GraspEnv(gymnasium.Env):
         #    unnoetiges Proben teuer.
         self._action_mode = self.cfg["action"].get("mode", "close_stay")
         if self._action_mode == "rate_probe":
-            self.action_space = gymnasium.spaces.MultiDiscrete(
-                [3 for _ in self._groups]
-            )
+            nvec = [3 for _ in self._groups]
         else:
-            self.action_space = gymnasium.spaces.MultiDiscrete(
-                [3 if "servo0" in g else 2 for g in self._groups]
-            )
+            nvec = [3 if "servo0" in g else 2 for g in self._groups]
+
+        # Wer entscheidet, wann der Griff fertig ist?
+        #   auto   (Default, alte Checkpoints): handgeschriebene Zustandsmaschine
+        #          — trigger_n Finger fuer trigger_confirmation_steps Frames.
+        #   policy: die Policy bekommt ein zusaetzliches Aktionssignal
+        #          {0: weiter schliessen, 1: Griff abschliessen und anheben}.
+        # Begruendung (RL_VERIFICATION.md 2c): unter 'auto' ist die Skript-
+        # Baseline always_close von der gelernten Policy nicht unterscheidbar,
+        # weil die EINZIGE Entscheidung, fuer die man das Kontaktsignal braucht
+        # — wann ist genug — gar nicht bei der Policy liegt. Erst mit der
+        # Stop-Aktion ist das Kontaktbit entscheidungsrelevant.
+        self._trigger_mode = str(config.get("trigger_mode", "auto"))
+        if self._trigger_mode not in ("auto", "policy"):
+            raise ValueError(f"trigger_mode muss auto|policy sein, ist {self._trigger_mode}")
+        # Vor diesem Step wird ein Stop ignoriert. Reine Explorationshilfe: eine
+        # frische Policy waehlt Stop in ~50% der Steps und wuerde die Episode
+        # sofort beenden, ohne je einen Griff zu sehen. Der reale Erstkontakt
+        # liegt bei q ~ 0.5, also ~100 Steps bei delta_norm 0.005 — 40 Steps
+        # maskieren nichts weg, was eine sinnvolle Policy tun wuerde.
+        self._trigger_min_steps = int(config.get("trigger_min_steps", 0))
+        # Zweite, wichtigere Vorbedingung: ohne einen einzigen Kontakt darf gar
+        # nicht gestoppt werden. Ohne sie gibt es kein Lernsignal — ein Stop ist
+        # billiger als ein Timeout, also konvergiert eine frische Policy auf
+        # "sofort stoppen" und sieht NIE einen erfolgreichen Lift (gemessen:
+        # 0 Erfolge in 20 Zufallsepisoden). Die Bedingung nimmt der Policy nichts
+        # Sinnvolles weg: ohne Kontakt anzuheben ist per Definition kein Griff.
+        # Was WANN genug ist — also wie weit ueber den Erstkontakt hinaus —
+        # bleibt vollstaendig ihre Entscheidung.
+        self._trigger_needs_contact = bool(config.get("trigger_requires_contact", True))
+
+        # Timeout ohne bestaetigten Trigger: mit True gilt die Episode als
+        # Fehlschlag, ohne dass noch ein Lift-Test gefahren wird.
+        #
+        # Warum das noetig ist: im auto-Modus lief bei Timeout bisher trotzdem
+        # der Lift-Test. Ein nie bestaetigter Trigger kostete damit nur die
+        # Schrittstrafe von rund 3 Punkten, bei einem Abstand von 15 zwischen
+        # Erfolg und Fehlschlag. Der Trigger war also fast gratis, und
+        # entsprechend gab es keinen Gradienten auf "schliesse so, dass er
+        # anspringt". Gemessen an seed_0_probetrig: 14 % der Power-Episoden
+        # enden im Timeout und sind mit 80 % Erfolg sogar besser als die
+        # getriggerten mit 76 % (RL_VERIFICATION.md 2f).
+        #
+        # Eigener Schalter statt an trigger_mode gekoppelt: im policy-Modus war
+        # dieselbe Bestrafung schon vorhanden, ist beim Zurueckschalten auf auto
+        # aber unbemerkt mit verschwunden. Default False haelt alte Configs und
+        # veroeffentlichte Zahlen reproduzierbar.
+        self._timeout_is_failure = bool(config.get("timeout_is_failure", False))
+
+        # Zweistufiger Probe-Trigger (Messbasis SENSOR_ANALYSIS_FINDINGS.md 9.7/9.9,
+        # Replay der realen CSVs vom 25.08.):
+        #   Stufe 1: EIN Finger meldet entry_steps Frames in Folge Kontakt ->
+        #     Hand haelt probe_steps Schritte an (Probe).
+        #   Stufe 2: nach der Settle-Maske entscheidet das baseline-korrigierte
+        #     statische Residuum des Detektors — ein blockierter Finger haelt
+        #     k*Ueberfahrweg, ein freier kollabiert auf ~0. Bestaetigt ->
+        #     Stabilisierung + Lift, sonst weiterschliessen mit Cooldown.
+        # Warum nicht einfach trigger_n aendern: n=2 feuert bei asymmetrischem
+        # Kontakt NIE (Probe-Test: middle-Bit kam nie), naives n=1 friert auf
+        # fruehe Einzelkanal-Fehlbits ein (2 von 3 Wuerfelzyklen bei q 0.23/0.34,
+        # vor dem physischen Kontakt ~0.5). Die Probe unterscheidet beide Faelle.
+        pb = config.get("trigger_probe") or {}
+        self._probe_trig = pb if bool(pb.get("enabled")) else None
+        if self._probe_trig:
+            if self._trigger_mode != "auto":
+                raise ValueError("trigger_probe braucht trigger_mode: auto")
+        self._probe_state    = "closing"
+        self._probe_left     = 0
+        self._probe_cooldown = 0
+        self._probe_tail: list = []
+        self._probes_failed  = 0
+        if self._trigger_mode == "policy":
+            nvec = nvec + [2]
+        self.action_space = gymnasium.spaces.MultiDiscrete(nvec)
 
         # Servo-Verhaltensmodell + Detektor-in-der-Sim: beides zusammen ergibt
         # dieselbe Observation-Semantik wie auf der echten Hand (Runner nutzt
@@ -107,6 +176,10 @@ class GraspEnv(gymnasium.Env):
         self._det_in_sim = self._servo_enabled and bool(det_cfg.get("use_in_sim", True))
         self._detector: ContactDetector | None = None
         self._phys_lag: dict | None = None
+        if self._probe_trig and not self._det_in_sim:
+            raise ValueError("trigger_probe braucht den Detektor in der Sim "
+                             "(servo_model + contact_detector.use_in_sim) — "
+                             "die Bestaetigung liest seine Residuen.")
         if self._servo_enabled and not self._det_in_sim:
             raise ValueError(
                 "servo_model.enabled braucht contact_detector.use_in_sim: true — "
@@ -297,6 +370,11 @@ class GraspEnv(gymnasium.Env):
         self._step_count             = 0
         self._consecutive_contact    = 0
         self._lift_triggered         = False
+        self._probe_state            = "closing"
+        self._probe_left             = 0
+        self._probe_cooldown         = 0
+        self._probe_tail             = []
+        self._probes_failed          = 0
         self._stabilization_left     = 0
         self._pedestal_hit_ever      = False
         self._n_contact_prev         = 0
@@ -321,6 +399,8 @@ class GraspEnv(gymnasium.Env):
         n_contact_prev = self._n_contact_prev
 
         delta  = self._action_to_delta(action)
+        if self._probe_trig and self._probe_state == "probing":
+            delta = [0.0] * len(delta)     # Probe: Hand haelt, Aktion ueberstimmt
         next_q = [max(0.0, min(1.0, q + d)) for q, d in zip(self._hand.q_target(), delta)]
         self._apply_pip_caps(next_q)
         self._hand.apply_q_target(next_q)
@@ -335,17 +415,29 @@ class GraspEnv(gymnasium.Env):
         n_contact = int(obs[:len(self._fingers)].sum())
         self._n_contact_prev = n_contact
 
-        # Trigger State Machine (Westling & Johansson 1984):
-        # trigger_confirmation_steps consecutive frames mit >= trigger_n Kontakten -> Trigger.
-        if n_contact >= self.cfg["trigger_n"]:
-            self._consecutive_contact += 1
+        if self._trigger_mode == "policy":
+            # Letztes Aktionssignal = Griff abschliessen. Vor trigger_min_steps
+            # wirkungslos (siehe __init__).
+            stop = int(action[len(self._groups)]) == 1
+            can_stop = (self._step_count >= self._trigger_min_steps
+                        and (n_contact >= 1 or not self._trigger_needs_contact))
+            if not self._lift_triggered and stop and can_stop:
+                self._lift_triggered     = True
+                self._stabilization_left = self.cfg["stabilization_steps"]
+        elif self._probe_trig:
+            self._probe_step(n_contact)
         else:
-            self._consecutive_contact = 0
+            # Trigger State Machine (Westling & Johansson 1984):
+            # trigger_confirmation_steps consecutive frames mit >= trigger_n Kontakten -> Trigger.
+            if n_contact >= self.cfg["trigger_n"]:
+                self._consecutive_contact += 1
+            else:
+                self._consecutive_contact = 0
 
-        if (not self._lift_triggered
-                and self._consecutive_contact >= self.cfg["trigger_confirmation_steps"]):
-            self._lift_triggered     = True
-            self._stabilization_left = self.cfg["stabilization_steps"]
+            if (not self._lift_triggered
+                    and self._consecutive_contact >= self.cfg["trigger_confirmation_steps"]):
+                self._lift_triggered     = True
+                self._stabilization_left = self.cfg["stabilization_steps"]
 
         pedestal_now = self._check_pedestal_contact()
         if pedestal_now:
@@ -378,13 +470,63 @@ class GraspEnv(gymnasium.Env):
             reward += terminal_reward(lifted, cfg=self.cfg["reward"])
             return obs, reward, True, False, self._info(n_contact, lifted=lifted)
 
-        # Kein Trigger bis max_steps -> trotzdem Lift-Test.
+        # Kein Trigger bis max_steps.
+        # policy oder timeout_is_failure: Fehlschlag OHNE Lift-Test. Sonst waere
+        #         Nie-Triggern gratis — der Lift kaeme geschenkt und der Trigger
+        #         waere folgenlos.
+        # sonst:  trotzdem Lift-Test (die Zustandsmaschine hat es nur nicht
+        #         rechtzeitig bestaetigt, der Griff kann trotzdem halten).
         if timeout:
+            if self._trigger_mode == "policy" or self._timeout_is_failure:
+                reward += terminal_reward(lifted=False, cfg=self.cfg["reward"])
+                info = self._info(n_contact, lifted=False)
+                info["timeout"] = True
+                return obs, reward, True, False, info
             lifted = self._run_lift_test()
             reward += terminal_reward(lifted, cfg=self.cfg["reward"])
             return obs, reward, True, False, self._info(n_contact, lifted=lifted)
 
         return obs, reward, False, False, self._info(n_contact, lifted=False)
+
+    def _probe_step(self, n_contact: int) -> None:
+        # Zustandsmaschine des zweistufigen Probe-Triggers (siehe __init__).
+        # Wird nur im auto-Modus mit trigger_probe.enabled aufgerufen.
+        pc = self._probe_trig
+        if self._lift_triggered:
+            return
+        if self._probe_state == "closing":
+            if self._probe_cooldown > 0:
+                self._probe_cooldown -= 1
+            if n_contact >= int(pc.get("entry_n", 1)):
+                self._consecutive_contact += 1
+            else:
+                self._consecutive_contact = 0
+            if (self._probe_cooldown == 0
+                    and self._consecutive_contact >= int(pc.get("entry_steps", 3))):
+                self._probe_state = "probing"
+                self._probe_left  = int(pc.get("probe_steps", 25))
+                self._probe_tail  = []
+            return
+        # probing: Residuen sammeln, am Ende entscheiden. resid ist waehrend
+        # Settle-/Restart-Maske None — nur echte Werte zaehlen.
+        self._probe_left -= 1
+        diag   = self._detector.diagnostics()
+        resids = [d["resid"] for d in diag.values() if d.get("resid") is not None]
+        self._probe_tail.append(max(resids) if resids else None)
+        if self._probe_left > 0:
+            return
+        check   = int(pc.get("check_steps", 8))
+        tail    = [r for r in self._probe_tail[-check:] if r is not None]
+        confirm = float(pc.get("confirm_residual",
+                               self.cfg["contact_detector"]["residual_min"]))
+        if tail and float(np.mean(tail)) >= confirm:
+            self._lift_triggered     = True
+            self._stabilization_left = self.cfg["stabilization_steps"]
+        else:
+            self._probes_failed      += 1
+            self._probe_cooldown      = int(pc.get("cooldown_steps", 20))
+            self._consecutive_contact = 0
+        self._probe_state = "closing"
 
     # Observation 
     def _measure_phys_lag(self) -> dict:
@@ -580,12 +722,21 @@ class GraspEnv(gymnasium.Env):
     # Info dict 
     def _info(self, n_contact: int, lifted: bool, dropped: bool = False) -> dict:
         return {
+            # is_success ist der Key, den SB3 auswertet: EvalCallback loggt daraus
+            # eval/success_rate und legt ihn in evaluations.npz ab. ep_rew_mean
+            # allein zeigt nicht, wann der Griff sitzt, weil die Reward-Verteilung
+            # bimodal ist (Erfolg um +8, Fehlschlag um -6.5) und der Mittelwert
+            # beide Moden mischt.
+            "is_success":      bool(lifted and not dropped),
             "n_contact":       n_contact,
             "lifted":          lifted,
             "dropped":         dropped,
             "lift_triggered":  self._lift_triggered,
             "pedestal_hit":    self._pedestal_hit_ever,
             "step_count":      self._step_count,
+            "timeout":         False,
+            "trigger_mode":    self._trigger_mode,
+            "probes_failed":   self._probes_failed,
         }
 
     # Cleanup 

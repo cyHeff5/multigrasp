@@ -56,7 +56,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Palm -RIGHT.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Palm_RIGHT/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-.05675 .005 .002" rpy="1.57 0 0" />
     </collision>
@@ -362,7 +410,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -375,7 +471,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -401,7 +545,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -414,7 +600,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -440,7 +668,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -453,7 +687,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -482,9 +722,9 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0152 0.0194 0.0255" />
+        <mesh filename="package://ar10_description/meshes/hd/fingertip_v9/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-      <origin xyz="0.00004 -0.00009 -0.00234" rpy="3.1326 0.0633 -1.5692" />
+      <origin xyz="-.009715 .011 -.015" rpy="1.57 0 0" />
     </collision>
     <inertial>
       <mass value="0.003" />
@@ -506,7 +746,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -519,7 +807,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -545,7 +881,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -558,7 +936,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -584,7 +1004,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -597,7 +1023,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -624,9 +1056,9 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0152 0.0194 0.0255" />
+        <mesh filename="package://ar10_description/meshes/hd/fingertip_v9/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-      <origin xyz="0.00004 -0.00009 -0.00234" rpy="3.1326 0.0633 -1.5692" />
+      <origin xyz="-.009715 .011 -.015" rpy="1.57 0 0" />
     </collision>
     <inertial>
       <mass value="0.003" />
@@ -648,7 +1080,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -661,7 +1141,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -687,7 +1215,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -700,7 +1270,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -726,7 +1338,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -739,7 +1357,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -766,9 +1390,9 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0152 0.0194 0.0255" />
+        <mesh filename="package://ar10_description/meshes/hd/fingertip_v9/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-      <origin xyz="0.00004 -0.00009 -0.00234" rpy="3.1326 0.0633 -1.5692" />
+      <origin xyz="-.009715 .011 -.015" rpy="1.57 0 0" />
     </collision>
     <inertial>
       <mass value="0.003" />
@@ -790,7 +1414,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -803,7 +1475,55 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/45mm 3 hole.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_07.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/45mm_3_hole/piece_08.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.00325 .0135" rpy="-1.57 1.57 0" />
     </collision>
@@ -829,7 +1549,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -842,7 +1604,49 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/30mmROSFULL.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_03.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_04.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_05.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_06.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/30mmROSFULL/piece_07.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .0125" rpy="-1.57 1.57 0" />
     </collision>
@@ -868,7 +1672,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -881,7 +1691,13 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Fingertip.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Fingertip/piece_01.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="-0.01 -.0035 .00825" rpy="-1.57 1.57 0" />
     </collision>
@@ -908,9 +1724,9 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0152 0.0194 0.0255" />
+        <mesh filename="package://ar10_description/meshes/hd/fingertip_v9/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-      <origin xyz="0.00004 -0.00009 -0.00234" rpy="3.1326 0.0633 -1.5692" />
+      <origin xyz="-.009715 .011 -.015" rpy="1.57 0 0" />
     </collision>
     <inertial>
       <mass value="0.003" />
@@ -932,7 +1748,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Thumb 1.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_1/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.02125 -.00325" rpy="0 0 1.57" />
     </collision>
@@ -958,7 +1774,25 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Thumb 2.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_2/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0145 -.0095" rpy="0 0 1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_2/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0145 -.0095" rpy="0 0 1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_2/piece_02.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 -.0145 -.0095" rpy="0 0 1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_2/piece_03.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 -.0145 -.0095" rpy="0 0 1.57" />
     </collision>
@@ -992,7 +1826,19 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Thumb 3-Rev2.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 .0125 -.0095" rpy="0 0 -1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz="0 .0125 -.0095" rpy="0 0 -1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_02.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz="0 .0125 -.0095" rpy="0 0 -1.57" />
     </collision>
@@ -1005,7 +1851,19 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://ar10_description/meshes/Thumb 3-Rev2.STL" scale=".001 .001 .001" />
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_00.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz=".01 .0125 -.0095" rpy="0 0 -1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_01.obj" scale="0.001 0.001 0.001" />
+      </geometry>
+      <origin xyz=".01 .0125 -.0095" rpy="0 0 -1.57" />
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="package://ar10_description/meshes/hd/Thumb_3_Rev2/piece_02.obj" scale="0.001 0.001 0.001" />
       </geometry>
       <origin xyz=".01 .0125 -.0095" rpy="0 0 -1.57" />
     </collision>
@@ -1031,9 +1889,9 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.0152 0.0194 0.0255" />
+        <mesh filename="package://ar10_description/meshes/hd/fingertip_v9/piece_00.obj" scale="0.001 0.001 0.001" />
       </geometry>
-      <origin xyz="-0.00005 -0.01169 0.00714" rpy="3.1384 -1.0433 -1.5767" />
+      <origin xyz=".009715 .005 .005" rpy="2.55 3.14 0" />
     </collision>
     <inertial>
       <mass value="0.003" />
